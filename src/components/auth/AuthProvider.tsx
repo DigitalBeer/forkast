@@ -1,0 +1,28 @@
+"use client";
+
+import { useEffect } from "react";
+import { supabaseBrowser } from "@/lib/supabaseClient";
+import { useAuthStore } from "@/store/auth";
+
+export default function AuthProvider({ children }: { children: React.ReactNode }) {
+  useEffect(() => {
+    const { setUser, setLoading } = useAuthStore.getState();
+    const supabase = supabaseBrowser();
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  return <>{children}</>;
+}
