@@ -29,16 +29,40 @@ This epic delivers the core functionality for users to build and manage their pe
 4. Changes are persisted to Supabase (logged-in) or local storage (anonymous)
 5. Users can add ingredients and cooking instructions
 
-### Story 2.3: Meal Categories and Tags
+### Story 2.3: Delete a Meal
 **As a** user,  
-**I want** to categorize and tag my meals,  
-**so that** I can organize and filter my collection effectively.
+**I want** to be able to delete a meal from my repertoire,  
+**so that** I can keep my list up-to-date and relevant.
 
 **Acceptance Criteria:**
-1. Users can add/remove tags to meals
-2. Users can create custom categories
-3. Meals can be filtered by tags and categories
-4. Common tags are suggested when adding new meals
+1. A "Delete" option exists for each meal
+2. Clicking delete prompts for confirmation
+3. Confirming deletion removes the meal from Supabase (logged-in) or local storage (anonymous)
+
+### Story 2.4: Track Detailed Meal History
+**As a** user,  
+**I want** interactions with meals tracked with timestamps and action types,  
+**so that** the system can provide better recommendations.
+
+### Story 2.5: Implement Meal Recommendation Engine
+**As a** user,  
+**I want** meal recommendations based on history and preferences,  
+**so that** meal planning is easier.
+
+### Story 2.6: Display Meal Suggestions
+**As a** user,  
+**I want** to see suggested meals in the UI,  
+**so that** I can quickly choose meals.
+
+### Story 2.7: Enhance Recommendation Logic with Filters
+**As a** user,  
+**I want** to filter suggestions by dietary and meal type,  
+**so that** I receive relevant recommendations.
+
+### Story 2.8: Refactor and Correct Recommendation Engine
+**As a** developer,  
+**I want** to refactor and fix recommendation logic,  
+**so that** it is maintainable and correct.
 
 ## Technical Notes
 - Supabase tables needed: `meals`, `tags`, `meal_tags`

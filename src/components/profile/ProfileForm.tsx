@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, FormEvent } from "react";
-import { supabaseBrowser } from "@/lib/supabaseClient";
+import { createClient } from "@/lib/supabase/client";
 import { useAuthStore } from "@/store/auth";
 
 export default function ProfileForm() {
@@ -13,7 +13,7 @@ export default function ProfileForm() {
   useEffect(() => {
     if (!user) return;
     const fetchProfile = async () => {
-      const { data } = await supabaseBrowser()
+      const { data } = await createClient()
         .from("profiles")
         .select("full_name")
         .eq("id", user.id)
@@ -27,7 +27,7 @@ export default function ProfileForm() {
     e.preventDefault();
     if (!user) return;
     setLoading(true);
-    await supabaseBrowser()
+    await createClient()
       .from("profiles")
       .update({ full_name: fullName, updated_at: new Date().toISOString() })
       .eq("id", user.id);

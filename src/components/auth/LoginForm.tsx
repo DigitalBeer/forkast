@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { supabaseBrowser } from "@/lib/supabaseClient";
+import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth";
 
@@ -10,6 +10,7 @@ export default function LoginForm() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [redirecting, setRedirecting] = useState(false);
   const setUser = useAuthStore((s) => s.setUser);
   const router = useRouter();
 
@@ -17,26 +18,39 @@ export default function LoginForm() {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    const supabase = supabaseBrowser();
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      if (error.message === "Invalid login credentials") {
-        setError("Invalid email or password. If you just signed up, please check your email for a confirmation link.");
+    console.log('Login form submitted. Attempting to sign in...');
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        console.error('Supabase login error:', error.message);
+        if (error.message === "Invalid login credentials") {
+          setError("Invalid email or password. If you just signed up, please check your email for a confirmation link.");
+        } else {
+          setError(error.message);
+        }
       } else {
-        setError(error.message);
+        console.log('Supabase login successful. Setting user and redirecting...');
+        setUser(data.user ?? null);
+        router.push("/");
+        console.log('Redirecting to dashboard');
+        // Set a state to indicate redirection for testing purposes
+        setRedirecting(true);
       }
-    } else {
-      setUser(data.user ?? null);
-      router.push("/");
+    } catch (e) {
+      console.error('Unexpected error in handleSubmit:', e);
+      setError('An unexpected error occurred. Please try again.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 max-w-sm">
+    <form onSubmit={handleSubmit} className="space-y-4 w-full">
       <div>
-        <label className="block text-sm font-medium">Email</label>
+        <label htmlFor="email" className="block text-sm font-medium">Email</label>
         <input
+          id="email"
           type="email"
           required
           value={email}
@@ -45,8 +59,9 @@ export default function LoginForm() {
         />
       </div>
       <div>
-        <label className="block text-sm font-medium">Password</label>
+        <label htmlFor="password" className="block text-sm font-medium">Password</label>
         <input
+          id="password"
           type="password"
           required
           value={password}
@@ -57,11 +72,12 @@ export default function LoginForm() {
       {error && <p className="text-red-600 text-sm">{error}</p>}
       <button
         type="submit"
-        disabled={loading}
+        disabled={loading || redirecting}
         className="w-full rounded bg-blue-600 px-4 py-2 font-semibold text-white disabled:opacity-50"
       >
-        {loading ? "Logging in..." : "Log In"}
+        {loading ? "Logging in..." : (redirecting ? "Redirecting..." : "Log In")}
       </button>
+      {redirecting && <span data-testid="redirecting-to-meals">Redirecting...</span>}
     </form>
   );
 }

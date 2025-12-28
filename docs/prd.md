@@ -20,6 +20,40 @@ This project addresses "meal planning fatigue" by creating a logic-driven meal p
 | :--- | :--- | :--- | :--- |
 | 2025-07-08 | 1.0 | Initial PRD draft. | John, PM |
 | 2025-07-09 | 1.1 | Added Epic 4 for Subscriptions & Payments. Added FR8 for Ingredients/Instructions to align with final UI/UX Spec. | Sarah, PO |
+| 2025-07-09 | 1.0 | Initial Version | Team |
+| 2025-07-15 | 1.1 | Added Epic 3 stories | Team |
+| 2025-08-01 | 1.2 | Updated Testing Strategy | Team |
+
+## Testing Strategy
+
+Our testing approach focuses on delivering high-quality software through a pragmatic combination of automated E2E tests and manual verification:
+
+### Automated Testing
+- **Playwright E2E Tests**:
+  - Cover critical user journeys and happy paths
+  - Focus on complete user workflows rather than individual units
+  - Run against a test environment that mimics production
+
+### Manual Testing
+- **Developer Testing Page**:
+  - Interactive test harness at `/dev-testing` for rapid validation
+  - Allows testing components in isolation with various states
+  - Includes visual test results and debugging tools
+
+### API Testing
+- Direct testing of Edge Functions and API endpoints
+- Focus on input validation, error cases, and edge conditions
+
+### Quality Gates
+1. All E2E tests must pass before deployment
+2. Manual smoke testing of critical paths
+3. Visual verification of UI components
+
+This streamlined approach reduces maintenance overhead while ensuring application reliability through:
+- Faster feedback cycles
+- Reduced test fragility
+- Focus on user-visible behavior
+- Better alignment with business value
 
 ## Section 2: Requirements
 

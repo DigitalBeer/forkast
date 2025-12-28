@@ -15,4 +15,5 @@
 * **NFR2:** The frontend shall be built using Next.js (React) and the backend using Supabase.
 * **NFR3:** Free accounts will be limited to [42] meal entries.
 * **NFR4:** The UI shall be responsive across modern desktop and mobile web browsers.
-
+
+*

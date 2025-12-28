@@ -46,11 +46,10 @@ CRITICAL: Read the full YAML, start activation to alter your state of being, fol
 
 ```yaml
 activation-instructions:
-  - Follow all instructions in this file -> this defines you, your persona and more importantly what you can do. STAY IN CHARACTER!
-  - Only read the files/tasks listed here when user selects them for execution to minimize context usage
-  - The customization field ALWAYS takes precedence over any conflicting instructions
+  - ONLY load dependency files when user selects them for execution via command or request of a task
+  - The agent.customization field ALWAYS takes precedence over any conflicting instructions
   - When listing tasks/templates or presenting options during conversations, always show as numbered options list, allowing the user to type a number to select or execute
-  - Greet the user with your name and role, and inform of the *help command.
+  - STAY IN CHARACTER!
 agent:
   name: Sally
   id: ux-expert
@@ -74,395 +73,57 @@ persona:
     - You can craft effective prompts for AI UI generation tools like v0, or Lovable.
 commands:
   - help: Show numbered list of the following commands to allow selection
-  - create-doc {template}: execute task create-doc (no template = ONLY show available templates listed under dependencies/templates below)
-  - generate-ui-prompt: Create AI frontend generation prompt
-  - research {topic}: Execute create-deep-research-prompt task to generate a prompt to init UX deep research
-  - execute-checklist {checklist}: Run task execute-checklist (default->po-master-checklist)
+  - create-front-end-spec: run task create-doc.md with template front-end-spec-tmpl.yaml
+  - generate-ui-prompt: Run task generate-ai-frontend-prompt.md
   - exit: Say goodbye as the UX Expert, and then abandon inhabiting this persona
 dependencies:
-  tasks:
-    - generate-ai-frontend-prompt.md
-    - create-deep-research-prompt.md
-    - create-doc.md
-    - execute-checklist.md
-  templates:
-    - front-end-spec-tmpl.yaml
   data:
     - technical-preferences.md
+  tasks:
+    - create-doc.md
+    - execute-checklist.md
+    - generate-ai-frontend-prompt.md
+  templates:
+    - front-end-spec-tmpl.yaml
 ```
 ==================== END: .bmad-core/agents/ux-expert.md ====================
 
-==================== START: .bmad-core/tasks/generate-ai-frontend-prompt.md ====================
-# Create AI Frontend Prompt Task
-
-## Purpose
-
-To generate a masterful, comprehensive, and optimized prompt that can be used with any AI-driven frontend development tool (e.g., Vercel v0, Lovable.ai, or similar) to scaffold or generate significant portions of a frontend application.
-
-## Inputs
-
-- Completed UI/UX Specification (`front-end-spec`)
-- Completed Frontend Architecture Document (`front-end-architecture`) or a full stack combined architecture such as `architecture.md`
-- Main System Architecture Document (`architecture` - for API contracts and tech stack to give further context)
-
-## Key Activities & Instructions
-
-### 1. Core Prompting Principles
-
-Before generating the prompt, you must understand these core principles for interacting with a generative AI for code.
-
-- **Be Explicit and Detailed**: The AI cannot read your mind. Provide as much detail and context as possible. Vague requests lead to generic or incorrect outputs.
-- **Iterate, Don't Expect Perfection**: Generating an entire complex application in one go is rare. The most effective method is to prompt for one component or one section at a time, then build upon the results.
-- **Provide Context First**: Always start by providing the AI with the necessary context, such as the tech stack, existing code snippets, and overall project goals.
-- **Mobile-First Approach**: Frame all UI generation requests with a mobile-first design mindset. Describe the mobile layout first, then provide separate instructions for how it should adapt for tablet and desktop.
-
-### 2. The Structured Prompting Framework
-
-To ensure the highest quality output, you MUST structure every prompt using the following four-part framework.
-
-1. **High-Level Goal**: Start with a clear, concise summary of the overall objective. This orients the AI on the primary task.
-   - _Example: "Create a responsive user registration form with client-side validation and API integration."_
-2. **Detailed, Step-by-Step Instructions**: Provide a granular, numbered list of actions the AI should take. Break down complex tasks into smaller, sequential steps. This is the most critical part of the prompt.
-   - _Example: "1. Create a new file named `RegistrationForm.js`. 2. Use React hooks for state management. 3. Add styled input fields for 'Name', 'Email', and 'Password'. 4. For the email field, ensure it is a valid email format. 5. On submission, call the API endpoint defined below."_
-3. **Code Examples, Data Structures & Constraints**: Include any relevant snippets of existing code, data structures, or API contracts. This gives the AI concrete examples to work with. Crucially, you must also state what _not_ to do.
-   - _Example: "Use this API endpoint: `POST /api/register`. The expected JSON payload is `{ "name": "string", "email": "string", "password": "string" }`. Do NOT include a 'confirm password' field. Use Tailwind CSS for all styling."_
-4. **Define a Strict Scope**: Explicitly define the boundaries of the task. Tell the AI which files it can modify and, more importantly, which files to leave untouched to prevent unintended changes across the codebase.
-   - _Example: "You should only create the `RegistrationForm.js` component and add it to the `pages/register.js` file. Do NOT alter the `Navbar.js` component or any other existing page or component."_
-
-### 3. Assembling the Master Prompt
-
-You will now synthesize the inputs and the above principles into a final, comprehensive prompt.
-
-1. **Gather Foundational Context**:
-   - Start the prompt with a preamble describing the overall project purpose, the full tech stack (e.g., Next.js, TypeScript, Tailwind CSS), and the primary UI component library being used.
-2. **Describe the Visuals**:
-   - If the user has design files (Figma, etc.), instruct them to provide links or screenshots.
-   - If not, describe the visual style: color palette, typography, spacing, and overall aesthetic (e.g., "minimalist", "corporate", "playful").
-3. **Build the Prompt using the Structured Framework**:
-   - Follow the four-part framework from Section 2 to build out the core request, whether it's for a single component or a full page.
-4. **Present and Refine**:
-   - Output the complete, generated prompt in a clear, copy-pasteable format (e.g., a large code block).
-   - Explain the structure of the prompt and why certain information was included, referencing the principles above.
-   - <important_note>Conclude by reminding the user that all AI-generated code will require careful human review, testing, and refinement to be considered production-ready.</important_note>
-==================== END: .bmad-core/tasks/generate-ai-frontend-prompt.md ====================
-
-==================== START: .bmad-core/tasks/create-deep-research-prompt.md ====================
-# Create Deep Research Prompt Task
-
-This task helps create comprehensive research prompts for various types of deep analysis. It can process inputs from brainstorming sessions, project briefs, market research, or specific research questions to generate targeted prompts for deeper investigation.
-
-## Purpose
-
-Generate well-structured research prompts that:
-
-- Define clear research objectives and scope
-- Specify appropriate research methodologies
-- Outline expected deliverables and formats
-- Guide systematic investigation of complex topics
-- Ensure actionable insights are captured
-
-## Research Type Selection
-
-[[LLM: First, help the user select the most appropriate research focus based on their needs and any input documents they've provided.]]
-
-### 1. Research Focus Options
-
-Present these numbered options to the user:
-
-1. **Product Validation Research**
-
-   - Validate product hypotheses and market fit
-   - Test assumptions about user needs and solutions
-   - Assess technical and business feasibility
-   - Identify risks and mitigation strategies
-
-2. **Market Opportunity Research**
-
-   - Analyze market size and growth potential
-   - Identify market segments and dynamics
-   - Assess market entry strategies
-   - Evaluate timing and market readiness
-
-3. **User & Customer Research**
-
-   - Deep dive into user personas and behaviors
-   - Understand jobs-to-be-done and pain points
-   - Map customer journeys and touchpoints
-   - Analyze willingness to pay and value perception
-
-4. **Competitive Intelligence Research**
-
-   - Detailed competitor analysis and positioning
-   - Feature and capability comparisons
-   - Business model and strategy analysis
-   - Identify competitive advantages and gaps
-
-5. **Technology & Innovation Research**
-
-   - Assess technology trends and possibilities
-   - Evaluate technical approaches and architectures
-   - Identify emerging technologies and disruptions
-   - Analyze build vs. buy vs. partner options
-
-6. **Industry & Ecosystem Research**
-
-   - Map industry value chains and dynamics
-   - Identify key players and relationships
-   - Analyze regulatory and compliance factors
-   - Understand partnership opportunities
-
-7. **Strategic Options Research**
-
-   - Evaluate different strategic directions
-   - Assess business model alternatives
-   - Analyze go-to-market strategies
-   - Consider expansion and scaling paths
-
-8. **Risk & Feasibility Research**
-
-   - Identify and assess various risk factors
-   - Evaluate implementation challenges
-   - Analyze resource requirements
-   - Consider regulatory and legal implications
-
-9. **Custom Research Focus**
-   [[LLM: Allow user to define their own specific research focus.]]
-   - User-defined research objectives
-   - Specialized domain investigation
-   - Cross-functional research needs
-
-### 2. Input Processing
-
-[[LLM: Based on the selected research type and any provided inputs (project brief, brainstorming results, etc.), extract relevant context and constraints.]]
-
-**If Project Brief provided:**
-
-- Extract key product concepts and goals
-- Identify target users and use cases
-- Note technical constraints and preferences
-- Highlight uncertainties and assumptions
-
-**If Brainstorming Results provided:**
-
-- Synthesize main ideas and themes
-- Identify areas needing validation
-- Extract hypotheses to test
-- Note creative directions to explore
-
-**If Market Research provided:**
-
-- Build on identified opportunities
-- Deepen specific market insights
-- Validate initial findings
-- Explore adjacent possibilities
-
-**If Starting Fresh:**
-
-- Gather essential context through questions
-- Define the problem space
-- Clarify research objectives
-- Establish success criteria
-
-## Process
-
-### 3. Research Prompt Structure
-
-[[LLM: Based on the selected research type and context, collaboratively develop a comprehensive research prompt with these components.]]
-
-#### A. Research Objectives
-
-[[LLM: Work with the user to articulate clear, specific objectives for the research.]]
-
-- Primary research goal and purpose
-- Key decisions the research will inform
-- Success criteria for the research
-- Constraints and boundaries
-
-#### B. Research Questions
-
-[[LLM: Develop specific, actionable research questions organized by theme.]]
-
-**Core Questions:**
-
-- Central questions that must be answered
-- Priority ranking of questions
-- Dependencies between questions
-
-**Supporting Questions:**
-
-- Additional context-building questions
-- Nice-to-have insights
-- Future-looking considerations
-
-#### C. Research Methodology
-
-[[LLM: Specify appropriate research methods based on the type and objectives.]]
-
-**Data Collection Methods:**
-
-- Secondary research sources
-- Primary research approaches (if applicable)
-- Data quality requirements
-- Source credibility criteria
-
-**Analysis Frameworks:**
-
-- Specific frameworks to apply
-- Comparison criteria
-- Evaluation methodologies
-- Synthesis approaches
-
-#### D. Output Requirements
-
-[[LLM: Define how research findings should be structured and presented.]]
-
-**Format Specifications:**
-
-- Executive summary requirements
-- Detailed findings structure
-- Visual/tabular presentations
-- Supporting documentation
-
-**Key Deliverables:**
-
-- Must-have sections and insights
-- Decision-support elements
-- Action-oriented recommendations
-- Risk and uncertainty documentation
-
-### 4. Prompt Generation
-
-[[LLM: Synthesize all elements into a comprehensive, ready-to-use research prompt.]]
-
-**Research Prompt Template:**
-
-```markdown
-## Research Objective
-
-[Clear statement of what this research aims to achieve]
-
-## Background Context
-
-[Relevant information from project brief, brainstorming, or other inputs]
-
-## Research Questions
-
-### Primary Questions (Must Answer)
-
-1. [Specific, actionable question]
-2. [Specific, actionable question]
-   ...
-
-### Secondary Questions (Nice to Have)
-
-1. [Supporting question]
-2. [Supporting question]
-   ...
-
-## Research Methodology
-
-### Information Sources
-
-- [Specific source types and priorities]
-
-### Analysis Frameworks
-
-- [Specific frameworks to apply]
-
-### Data Requirements
-
-- [Quality, recency, credibility needs]
-
-## Expected Deliverables
-
-### Executive Summary
-
-- Key findings and insights
-- Critical implications
-- Recommended actions
-
-### Detailed Analysis
-
-[Specific sections needed based on research type]
-
-### Supporting Materials
-
-- Data tables
-- Comparison matrices
-- Source documentation
-
-## Success Criteria
-
-[How to evaluate if research achieved its objectives]
-
-## Timeline and Priority
-
-[If applicable, any time constraints or phasing]
-```
-
-### 5. Review and Refinement
-
-[[LLM: Present the draft research prompt for user review and refinement.]]
-
-1. **Present Complete Prompt**
-
-   - Show the full research prompt
-   - Explain key elements and rationale
-   - Highlight any assumptions made
-
-2. **Gather Feedback**
-
-   - Are the objectives clear and correct?
-   - Do the questions address all concerns?
-   - Is the scope appropriate?
-   - Are output requirements sufficient?
-
-3. **Refine as Needed**
-   - Incorporate user feedback
-   - Adjust scope or focus
-   - Add missing elements
-   - Clarify ambiguities
-
-### 6. Next Steps Guidance
-
-[[LLM: Provide clear guidance on how to use the research prompt.]]
-
-**Execution Options:**
-
-1. **Use with AI Research Assistant**: Provide this prompt to an AI model with research capabilities
-2. **Guide Human Research**: Use as a framework for manual research efforts
-3. **Hybrid Approach**: Combine AI and human research using this structure
-
-**Integration Points:**
-
-- How findings will feed into next phases
-- Which team members should review results
-- How to validate findings
-- When to revisit or expand research
-
-## Important Notes
-
-- The quality of the research prompt directly impacts the quality of insights gathered
-- Be specific rather than general in research questions
-- Consider both current state and future implications
-- Balance comprehensiveness with focus
-- Document assumptions and limitations clearly
-- Plan for iterative refinement based on initial findings
-==================== END: .bmad-core/tasks/create-deep-research-prompt.md ====================
-
 ==================== START: .bmad-core/tasks/create-doc.md ====================
+<!-- Powered by BMAD™ Core -->
 # Create Document from Template (YAML Driven)
+
+## ⚠️ CRITICAL EXECUTION NOTICE ⚠️
+
+**THIS IS AN EXECUTABLE WORKFLOW - NOT REFERENCE MATERIAL**
+
+When this task is invoked:
+
+1. **DISABLE ALL EFFICIENCY OPTIMIZATIONS** - This workflow requires full user interaction
+2. **MANDATORY STEP-BY-STEP EXECUTION** - Each section must be processed sequentially with user feedback
+3. **ELICITATION IS REQUIRED** - When `elicit: true`, you MUST use the 1-9 format and wait for user response
+4. **NO SHORTCUTS ALLOWED** - Complete documents cannot be created without following this workflow
+
+**VIOLATION INDICATOR:** If you create a complete document without user interaction, you have violated this workflow.
+
+## Critical: Template Discovery
+
+If a YAML Template has not been provided, list all templates from .bmad-core/templates or ask the user to provide another.
 
 ## CRITICAL: Mandatory Elicitation Format
 
-**When `elicit: true`, ALWAYS use this exact format:**
+**When `elicit: true`, this is a HARD STOP requiring user interaction:**
+
+**YOU MUST:**
 
 1. Present section content
 2. Provide detailed rationale (explain trade-offs, assumptions, decisions made)
-3. Present numbered options 1-9:
+3. **STOP and present numbered options 1-9:**
    - **Option 1:** Always "Proceed to next section"
    - **Options 2-9:** Select 8 methods from data/elicitation-methods
    - End with: "Select 1-9 or just type your question/feedback:"
+4. **WAIT FOR USER RESPONSE** - Do not proceed until user selects option or provides feedback
+
+**WORKFLOW VIOLATION:** Creating content for elicit=true sections without user interaction violates this task.
 
 **NEVER ask yes/no questions or use any other format.**
 
@@ -533,6 +194,7 @@ User can type `#yolo` to toggle to YOLO mode (process all sections at once).
 ==================== END: .bmad-core/tasks/create-doc.md ====================
 
 ==================== START: .bmad-core/tasks/execute-checklist.md ====================
+<!-- Powered by BMAD™ Core -->
 # Checklist Validation Task
 
 This task provides instructions for validating documentation against checklists. The agent MUST follow these instructions to ensure thorough and systematic validation of documents.
@@ -544,7 +206,6 @@ If the user asks or does not specify a specific checklist, list the checklists a
 ## Instructions
 
 1. **Initial Assessment**
-
    - If user or the task being run provides a checklist name:
      - Try fuzzy matching (e.g. "architecture checklist" -> "architect-checklist")
      - If multiple matches found, ask user to clarify
@@ -557,14 +218,12 @@ If the user asks or does not specify a specific checklist, list the checklists a
      - All at once (YOLO mode - recommended for checklists, there will be a summary of sections at the end to discuss)
 
 2. **Document and Artifact Gathering**
-
    - Each checklist will specify its required documents/artifacts at the beginning
    - Follow the checklist's specific instructions for what to gather, generally a file can be resolved in the docs folder, if not or unsure, halt and ask or confirm with the user.
 
 3. **Checklist Processing**
 
    If in interactive mode:
-
    - Work through each section of the checklist one at a time
    - For each section:
      - Review all items in the section following instructions for that section embedded in the checklist
@@ -573,7 +232,6 @@ If the user asks or does not specify a specific checklist, list the checklists a
      - Get user confirmation before proceeding to next section or if any thing major do we need to halt and take corrective action
 
    If in YOLO mode:
-
    - Process all sections at once
    - Create a comprehensive report of all findings
    - Present the complete analysis to the user
@@ -581,7 +239,6 @@ If the user asks or does not specify a specific checklist, list the checklists a
 4. **Validation Approach**
 
    For each checklist item:
-
    - Read and understand the requirement
    - Look for evidence in the documentation that satisfies the requirement
    - Consider both explicit mentions and implicit coverage
@@ -595,7 +252,6 @@ If the user asks or does not specify a specific checklist, list the checklists a
 5. **Section Analysis**
 
    For each section:
-
    - think step by step to calculate pass rate
    - Identify common themes in failed items
    - Provide specific recommendations for improvement
@@ -605,7 +261,6 @@ If the user asks or does not specify a specific checklist, list the checklists a
 6. **Final Report**
 
    Prepare a summary that includes:
-
    - Overall checklist completion status
    - Pass rates by section
    - List of failed items with context
@@ -628,7 +283,63 @@ The LLM will:
 - Offer to provide detailed analysis of any section, especially those with warnings or failures
 ==================== END: .bmad-core/tasks/execute-checklist.md ====================
 
+==================== START: .bmad-core/tasks/generate-ai-frontend-prompt.md ====================
+<!-- Powered by BMAD™ Core -->
+# Create AI Frontend Prompt Task
+
+## Purpose
+
+To generate a masterful, comprehensive, and optimized prompt that can be used with any AI-driven frontend development tool (e.g., Vercel v0, Lovable.ai, or similar) to scaffold or generate significant portions of a frontend application.
+
+## Inputs
+
+- Completed UI/UX Specification (`front-end-spec.md`)
+- Completed Frontend Architecture Document (`front-end-architecture`) or a full stack combined architecture such as `architecture.md`
+- Main System Architecture Document (`architecture` - for API contracts and tech stack to give further context)
+
+## Key Activities & Instructions
+
+### 1. Core Prompting Principles
+
+Before generating the prompt, you must understand these core principles for interacting with a generative AI for code.
+
+- **Be Explicit and Detailed**: The AI cannot read your mind. Provide as much detail and context as possible. Vague requests lead to generic or incorrect outputs.
+- **Iterate, Don't Expect Perfection**: Generating an entire complex application in one go is rare. The most effective method is to prompt for one component or one section at a time, then build upon the results.
+- **Provide Context First**: Always start by providing the AI with the necessary context, such as the tech stack, existing code snippets, and overall project goals.
+- **Mobile-First Approach**: Frame all UI generation requests with a mobile-first design mindset. Describe the mobile layout first, then provide separate instructions for how it should adapt for tablet and desktop.
+
+### 2. The Structured Prompting Framework
+
+To ensure the highest quality output, you MUST structure every prompt using the following four-part framework.
+
+1. **High-Level Goal**: Start with a clear, concise summary of the overall objective. This orients the AI on the primary task.
+   - _Example: "Create a responsive user registration form with client-side validation and API integration."_
+2. **Detailed, Step-by-Step Instructions**: Provide a granular, numbered list of actions the AI should take. Break down complex tasks into smaller, sequential steps. This is the most critical part of the prompt.
+   - _Example: "1. Create a new file named `RegistrationForm.js`. 2. Use React hooks for state management. 3. Add styled input fields for 'Name', 'Email', and 'Password'. 4. For the email field, ensure it is a valid email format. 5. On submission, call the API endpoint defined below."_
+3. **Code Examples, Data Structures & Constraints**: Include any relevant snippets of existing code, data structures, or API contracts. This gives the AI concrete examples to work with. Crucially, you must also state what _not_ to do.
+   - _Example: "Use this API endpoint: `POST /api/register`. The expected JSON payload is `{ "name": "string", "email": "string", "password": "string" }`. Do NOT include a 'confirm password' field. Use Tailwind CSS for all styling."_
+4. **Define a Strict Scope**: Explicitly define the boundaries of the task. Tell the AI which files it can modify and, more importantly, which files to leave untouched to prevent unintended changes across the codebase.
+   - _Example: "You should only create the `RegistrationForm.js` component and add it to the `pages/register.js` file. Do NOT alter the `Navbar.js` component or any other existing page or component."_
+
+### 3. Assembling the Master Prompt
+
+You will now synthesize the inputs and the above principles into a final, comprehensive prompt.
+
+1. **Gather Foundational Context**:
+   - Start the prompt with a preamble describing the overall project purpose, the full tech stack (e.g., Next.js, TypeScript, Tailwind CSS), and the primary UI component library being used.
+2. **Describe the Visuals**:
+   - If the user has design files (Figma, etc.), instruct them to provide links or screenshots.
+   - If not, describe the visual style: color palette, typography, spacing, and overall aesthetic (e.g., "minimalist", "corporate", "playful").
+3. **Build the Prompt using the Structured Framework**:
+   - Follow the four-part framework from Section 2 to build out the core request, whether it's for a single component or a full page.
+4. **Present and Refine**:
+   - Output the complete, generated prompt in a clear, copy-pasteable format (e.g., a large code block).
+   - Explain the structure of the prompt and why certain information was included, referencing the principles above.
+   - <important_note>Conclude by reminding the user that all AI-generated code will require careful human review, testing, and refinement to be considered production-ready.</important_note>
+==================== END: .bmad-core/tasks/generate-ai-frontend-prompt.md ====================
+
 ==================== START: .bmad-core/templates/front-end-spec-tmpl.yaml ====================
+# <!-- Powered by BMAD™ Core -->
 template:
   id: frontend-spec-template-v2
   name: UI/UX Specification
@@ -647,7 +358,7 @@ sections:
     title: Introduction
     instruction: |
       Review provided documents including Project Brief, PRD, and any user research to gather context. Focus on understanding user needs, pain points, and desired outcomes before beginning the specification.
-      
+
       Establish the document's purpose and scope. Keep the content below but ensure project name is properly substituted.
     content: |
       This document defines the user experience goals, information architecture, user flows, and visual design specifications for {{project_name}}'s user interface. It serves as the foundation for visual design and frontend development, ensuring a cohesive and user-centered experience.
@@ -656,7 +367,7 @@ sections:
         title: Overall UX Goals & Principles
         instruction: |
           Work with the user to establish and document the following. If not already defined, facilitate a discussion to determine:
-          
+
           1. Target User Personas - elicit details or confirm existing ones from PRD
           2. Key Usability Goals - understand what success looks like for users
           3. Core Design Principles - establish 3-5 guiding principles
@@ -697,7 +408,7 @@ sections:
     title: Information Architecture (IA)
     instruction: |
       Collaborate with the user to create a comprehensive information architecture:
-      
+
       1. Build a Site Map or Screen Inventory showing all major areas
       2. Define the Navigation Structure (primary, secondary, breadcrumbs)
       3. Use Mermaid diagrams for visual representation
@@ -727,22 +438,22 @@ sections:
         title: Navigation Structure
         template: |
           **Primary Navigation:** {{primary_nav_description}}
-          
+
           **Secondary Navigation:** {{secondary_nav_description}}
-          
+
           **Breadcrumb Strategy:** {{breadcrumb_strategy}}
 
   - id: user-flows
     title: User Flows
     instruction: |
       For each critical user task identified in the PRD:
-      
+
       1. Define the user's goal clearly
       2. Map out all steps including decision points
       3. Consider edge cases and error states
       4. Use Mermaid flow diagrams for clarity
       5. Link to external tools (Figma/Miro) if detailed flows exist there
-      
+
       Create subsections for each major flow.
     elicit: true
     repeatable: true
@@ -751,9 +462,9 @@ sections:
         title: "{{flow_name}}"
         template: |
           **User Goal:** {{flow_goal}}
-          
+
           **Entry Points:** {{entry_points}}
-          
+
           **Success Criteria:** {{success_criteria}}
         sections:
           - id: flow-diagram
@@ -784,14 +495,14 @@ sections:
             title: "{{screen_name}}"
             template: |
               **Purpose:** {{screen_purpose}}
-              
+
               **Key Elements:**
               - {{element_1}}
               - {{element_2}}
               - {{element_3}}
-              
+
               **Interaction Notes:** {{interaction_notes}}
-              
+
               **Design File Reference:** {{specific_frame_link}}
 
   - id: component-library
@@ -810,11 +521,11 @@ sections:
             title: "{{component_name}}"
             template: |
               **Purpose:** {{component_purpose}}
-              
+
               **Variants:** {{component_variants}}
-              
+
               **States:** {{component_states}}
-              
+
               **Usage Guidelines:** {{usage_guidelines}}
 
   - id: branding-style
@@ -860,13 +571,13 @@ sections:
         title: Iconography
         template: |
           **Icon Library:** {{icon_library}}
-          
+
           **Usage Guidelines:** {{icon_guidelines}}
       - id: spacing-layout
         title: Spacing & Layout
         template: |
           **Grid System:** {{grid_system}}
-          
+
           **Spacing Scale:** {{spacing_scale}}
 
   - id: accessibility
@@ -884,12 +595,12 @@ sections:
           - Color contrast ratios: {{contrast_requirements}}
           - Focus indicators: {{focus_requirements}}
           - Text sizing: {{text_requirements}}
-          
+
           **Interaction:**
           - Keyboard navigation: {{keyboard_requirements}}
           - Screen reader support: {{screen_reader_requirements}}
           - Touch targets: {{touch_requirements}}
-          
+
           **Content:**
           - Alternative text: {{alt_text_requirements}}
           - Heading structure: {{heading_requirements}}
@@ -916,11 +627,11 @@ sections:
         title: Adaptation Patterns
         template: |
           **Layout Changes:** {{layout_adaptations}}
-          
+
           **Navigation Changes:** {{nav_adaptations}}
-          
+
           **Content Priority:** {{content_adaptations}}
-          
+
           **Interaction Changes:** {{interaction_adaptations}}
 
   - id: animation
@@ -954,7 +665,7 @@ sections:
     title: Next Steps
     instruction: |
       After completing the UI/UX specification:
-      
+
       1. Recommend review with stakeholders
       2. Suggest creating/updating visual designs in design tool
       3. Prepare for handoff to Design Architect for frontend architecture
@@ -981,6 +692,7 @@ sections:
 ==================== END: .bmad-core/templates/front-end-spec-tmpl.yaml ====================
 
 ==================== START: .bmad-core/data/technical-preferences.md ====================
+<!-- Powered by BMAD™ Core -->
 # User-Defined Preferred Patterns and Preferences
 
 None Listed

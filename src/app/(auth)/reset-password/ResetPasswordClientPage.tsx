@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import PasswordResetForm from "@/components/auth/PasswordResetForm";
 import { useSearchParams } from "next/navigation";
 import UpdatePasswordForm from "@/components/auth/UpdatePasswordForm";
-import { supabaseBrowser } from "@/lib/supabaseClient";
+import { createClient } from "@/lib/supabase/client";
 
 
 export default function ResetPasswordClientPage() {
@@ -14,12 +14,20 @@ export default function ResetPasswordClientPage() {
 
 
   useEffect(() => {
-    const supabase = supabaseBrowser();
+    const supabase = createClient();
 
     // If redirected with ?type=recovery or code param, show update form immediately
     const urlType = searchParams.get("type");
     const code = searchParams.get("code");
-    if (urlType === "recovery" || code) {
+    const accessToken = searchParams.get("access_token");
+    const hash = typeof window !== "undefined" ? window.location.hash : null;
+
+    if (
+      urlType === "recovery" ||
+      code ||
+      accessToken ||
+      (hash && hash.includes("type=recovery"))
+    ) {
       setIsUpdateForm(true);
     }
 
@@ -32,7 +40,7 @@ export default function ResetPasswordClientPage() {
 
     // Also listen for PASSWORD_RECOVERY or SIGNED_IN events
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "PASSWORD_RECOVERY") {
+      if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") {
         setIsUpdateForm(true);
       }
     });

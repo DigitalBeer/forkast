@@ -1,5 +1,6 @@
-version: 4.27.0
 markdownExploder: true
+qa:
+  qaLocation: docs/qa
 prd:
   prdFile: docs/prd.md
   prdVersion: v4
@@ -18,8 +19,4 @@ devLoadAlwaysFiles:
   - docs/architecture/source-tree.md
 devDebugLog: .ai/debug-log.md
 devStoryLocation: docs/stories
-workflow:
-  planFile: docs/workflow-plan.md
-  trackProgress: true
-  enforceSequence: false
-  updateOnCompletion: true
+slashPrefix: BMad

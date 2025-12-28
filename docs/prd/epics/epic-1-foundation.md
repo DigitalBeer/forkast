@@ -29,6 +29,17 @@ To establish the project's technical foundation by setting up the Next.js and Su
 5. Protected routes redirect unauthenticated users
 6. Basic user profile information is stored in the database
 
+### Story 1.3: Anonymous Data Migration on Sign-up
+**As an** anonymous user with a temporary meal plan,  
+**I want** my data to be automatically saved to my new account when I sign up,  
+**so that** I don't lose my work.
+
+**Acceptance Criteria:**
+1. Local storage data is preserved during sign-up
+2. Upon successful account creation, data is migrated to the Supabase account
+3. Local storage is cleared post-migration
+4. User can see migrated data after first login
+
 ## Technical Notes
 - Next.js 14+ with App Router
 - Supabase Auth with email/password authentication

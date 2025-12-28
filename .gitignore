@@ -39,3 +39,42 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Build outputs
+build/
+dist/
+out/
+target/
+
+# Temporary files
+*.tmp
+*.temp
+*.cache
+*.bak
+
+# Log files
+*.log
+logs/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Exclude entire directories (note the trailing slash)
+build/
+dist/
+node_modules/
+temp/
+.bmad-coverage/
+.windsurf/
+docs/
+web-bundles/
+
+# Exclude all contents of a directory but keep the directory structure
+build/*

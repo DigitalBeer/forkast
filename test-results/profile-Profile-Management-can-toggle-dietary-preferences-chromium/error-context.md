@@ -1,0 +1,57 @@
+# Page snapshot
+
+```yaml
+- navigation:
+  - link "BMAD Meal Planner":
+    - /url: /
+  - link "Dashboard":
+    - /url: /
+  - link "Plan":
+    - /url: /plan
+  - link "Planner":
+    - /url: /planner
+  - link "Saved Plans":
+    - /url: /meal-plans/history
+  - link "Meals":
+    - /url: /meals
+  - link "New Meal":
+    - /url: /meals/new
+  - button "Profile menu"
+- heading "Profile Settings" [level=1]
+- heading "Free Plan" [level=2]
+- paragraph: Limited to 42 meals
+- link "Manage Subscription":
+  - /url: /account
+- heading "Account Details" [level=2]
+- text: Email
+- textbox [disabled]: mat.deegee@gmail.com
+- paragraph: Email cannot be changed
+- text: Display Name
+- textbox "Enter your name": Test User 1766163771296
+- heading "Preferences" [level=3]
+- text: Dietary Preferences
+- button "Vegetarian"
+- button "Vegan"
+- button "Gluten-Free"
+- button "Dairy-Free"
+- button "Nut-Free"
+- button "Low-Carb"
+- button "Keto"
+- button "Paleo"
+- button "Halal"
+- button "Kosher"
+- text: Measurement System
+- radio "Metric (g, kg, ml, L)"
+- text: Metric (g, kg, ml, L)
+- radio "Imperial (oz, lb, cups)" [checked]
+- text: Imperial (oz, lb, cups)
+- button "Save Changes"
+- heading "Password" [level=2]
+- paragraph: Update your password
+- link "Change Password":
+  - /url: /reset-password
+- region "Notifications (F8)":
+  - list
+- region "Notifications alt+T"
+- alert
+```

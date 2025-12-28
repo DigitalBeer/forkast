@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { supabaseBrowser } from "@/lib/supabaseClient";
+import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 
 export default function UpdatePasswordForm() {
@@ -17,7 +17,7 @@ export default function UpdatePasswordForm() {
     setError(null);
     setMessage(null);
 
-    const supabase = supabaseBrowser();
+    const supabase = createClient();
     const { error } = await supabase.auth.updateUser({ password });
 
     if (error) {
@@ -30,7 +30,7 @@ export default function UpdatePasswordForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 max-w-sm">
+    <form onSubmit={handleSubmit} className="space-y-4 w-full">
       <div>
         <label className="block text-sm font-medium">New Password</label>
         <input

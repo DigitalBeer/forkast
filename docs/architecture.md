@@ -87,36 +87,75 @@ CREATE INDEX ON public.planned_meals (meal_id);
 
 ## Section 10: Source Tree
 
-Plaintext
+The project follows a monorepo structure with the following key directories:
 
-meal-planner-app/
+```
+/ (root)
 ├── apps/
-│   └── web/
-│       ├── app/
-│       │   ├── (auth)/
-│       │   └── (main)/
-│       ├── components/
-│       ├── lib/
-│       └── public/
-├── packages/
-│   └── shared/
-│       └── src/
-│           └── types/
+│   └── web/                     # Next.js frontend
+│       ├── src/
+│       │   ├── app/            # App router pages
+│       │   │   └── dev-testing # Developer testing page
+│       │   ├── components/      # Reusable UI components
+│       │   ├── lib/            # Utility functions and services
+│       │   └── types/          # TypeScript type definitions
+│       └── public/             # Static assets
 ├── supabase/
-│   ├── migrations/
-│   └── functions/
-│       └── get-meal-suggestions/
-└── package.json
+│   ├── migrations/             # Database migrations
+│   ├── seed/                   # Seed data
+│   └── functions/              # Edge Functions
+└── shared/                     # Shared code between frontend and backend
+    └── types/                  # Shared TypeScript types
+```
 
-## Section 11: Infrastructure and Deployment
+## Section 11: Testing Strategy
+
+### Testing Approach
+
+The application follows a pragmatic testing strategy focused on:
+1. **Playwright E2E Tests**: Comprehensive tests of critical user journeys
+2. **Manual Testing**: Interactive testing via the `/dev-testing` page
+3. **Type Safety**: Leveraging TypeScript for compile-time checks
+4. **API Testing**: Direct testing of Edge Functions and endpoints
+
+### Test Structure
+
+```
+/tests
+├── e2e/
+│   ├── critical-flows.spec.ts   # Main test suite
+│   └── fixtures/               # Test data and utilities
+└── api/
+    └── edge-functions/         # Direct API tests
+```
+
+### Key Testing Principles
+
+1. **E2E First**: Focus on complete user workflows over unit tests
+2. **Developer Experience**: Fast feedback through the `/dev-testing` page
+3. **Maintainability**: Minimize test fragility by testing behavior over implementation
+4. **Documentation**: Clear test descriptions and comments
+
+### Quality Gates
+
+1. All E2E tests must pass before deployment
+2. Manual smoke testing of critical paths
+3. Visual verification of UI components
+4. Type checking and linting
+
+## Section 12: Security
+
+Security relies on Supabase Auth with Row-Level Security (RLS) policies on all user data tables. Secrets are managed via environment variables in GitHub/Vercel, and Dependabot is used for dependency scanning.
+
+## Section 13: Infrastructure and Deployment
 
 A CI/CD pipeline using GitHub Actions will manage automated deployments to Vercel and database migrations via the Supabase CLI. Preview deployments will be created for every pull request, and merges to the main branch will deploy to production.
 
-## Section 12: Error Handling Strategy
+## Section 14: Error Handling Strategy
 
 A centralized strategy using structured JSON logs, global error handlers, and database transactions will be employed to ensure application reliability.
 
-## Section 13: Coding Standards
+## Section 15: Coding Standards
 
 A minimal, mandatory set of standards for linting, formatting, naming, and critical patterns has been defined to ensure code quality and consistency for AI agents.
 
