@@ -85,6 +85,14 @@ export async function GET(req: NextRequest) {
     }
 
     try {
+      // Log the meals data for debugging
+      console.log(`[${requestId}] Processing ${meals.length} meals for aggregation`);
+      meals.forEach((m, idx) => {
+        console.log(`[${requestId}] Meal ${idx}: id=${m.id}, name=${m.name}, ingredients type=${typeof m.ingredients}, value=`, 
+          typeof m.ingredients === 'string' ? m.ingredients.substring(0, 100) : m.ingredients
+        );
+      });
+
       const items = aggregateFromMeals(
         meals.map((m) => ({ id: m.id, name: m.name, ingredients: m.ingredients }))
       );
@@ -100,6 +108,7 @@ export async function GET(req: NextRequest) {
       }, { status: 200 });
     } catch (err) {
       if (err instanceof IngredientFormatError) {
+        console.error(`[${requestId}] IngredientFormatError:`, err.message);
         return NextResponse.json({ error: 'Invalid ingredient data format', details: err.message }, { status: 422 });
       }
       console.error(`[${requestId}] Unexpected aggregation error:`, err);

@@ -74,6 +74,8 @@ temp/
 .bmad-coverage/
 .windsurf/
 docs/
+!docs/stories/
+!docs/architecture/
 web-bundles/
 
 # Exclude all contents of a directory but keep the directory structure
