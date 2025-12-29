@@ -6,7 +6,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { format, startOfWeek, addDays } from 'date-fns';
 import { WeeklyCalendar } from '@/components/plan/WeeklyCalendar';
 import { MealSuggestionPanel } from '@/components/plan/MealSuggestionPanel';
-import { ShoppingList } from '@/components/plan/ShoppingList';
 import { DIETARY_TYPES, type Meal, type MealType, type DietaryType } from '@/types/meal';
 import { getFilteredMealSuggestions } from '@/lib/services/suggestionService';
 import type { MealSuggestion } from '@/lib/services/suggestionService';
@@ -20,21 +19,20 @@ type MealPlan = {
 export default function PlannerPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  
+
   const [weekStart, _setWeekStart] = useState(() => {
     const startParam = searchParams.get('start');
     if (startParam) return startParam;
     const today = new Date();
     return format(startOfWeek(today, { weekStartsOn: 1 }), 'yyyy-MM-dd');
   });
-  
+
   const [meals, setMeals] = useState<MealPlan>({});
   const [suggestions, setSuggestions] = useState<MealSuggestion[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [hoveredSlotId, setHoveredSlotId] = useState<string | null>(null);
-  const [showShoppingList, setShowShoppingList] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  
+
   // Filter state from URL params
   const [dietaryTypes, setDietaryTypes] = useState<DietaryType[]>([]);
   const [mealTypes, setMealTypes] = useState<string[]>(['All']);
@@ -51,12 +49,12 @@ export default function PlannerPage() {
     if (startParam) {
       _setWeekStart(startParam);
     }
-    
+
     if (dietaryParam) {
       const types = dietaryParam.split(',').filter((t): t is DietaryType => DIETARY_TYPES.includes(t as DietaryType));
       setDietaryTypes(types);
     }
-    
+
     if (mealsParam) {
       const mapped: Array<string | null> = mealsParam
         .split(',')
@@ -90,7 +88,7 @@ export default function PlannerPage() {
     if (mealsForUrl.length > 0 && mealsForUrl.length < 3) {
       params.set('meals', mealsForUrl.join(','));
     }
-    
+
     const newURL = params.toString() ? `/planner?${params.toString()}` : '/planner';
     router.replace(newURL, { scroll: false });
   }, [router, weekStart]);
@@ -175,7 +173,7 @@ export default function PlannerPage() {
 
       await response.json();
       toast({ title: 'Success', description: 'Meal plan saved successfully!' });
-      
+
       // Record meal history for each saved meal
       Object.entries(meals).forEach(([date, dayMeals]) => {
         Object.entries(dayMeals).forEach(([mealType, meal]) => {
@@ -247,14 +245,14 @@ export default function PlannerPage() {
           },
         ];
       });
-      
+
       // Debug: Log the sorted suggestions to verify order
       console.log('Suggestions sorted by last_prepared:', mappedSuggestions.map(s => ({
         name: s.name,
         last_prepared: s.last_prepared,
         daysAgo: s.last_prepared ? Math.floor((Date.now() - new Date(s.last_prepared).getTime()) / (1000 * 60 * 60 * 24)) : 'never'
       })));
-      
+
       setSuggestions(mappedSuggestions.slice(0, mealCount));
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to load suggestions');
@@ -301,7 +299,7 @@ export default function PlannerPage() {
       d.setDate(d.getDate() + i);
       days.push(format(d, 'yyyy-MM-dd'));
     }
-    
+
     const types: MealType[] = ['Breakfast', 'Lunch', 'Dinner'];
     for (const day of days) {
       for (const type of types) {
@@ -313,6 +311,32 @@ export default function PlannerPage() {
     }
   };
 
+  const handleMealSwap = (
+    sourceDate: string,
+    sourceMealType: MealType,
+    targetDate: string,
+    targetMealType: MealType
+  ) => {
+    setMeals(prev => {
+      const sourceMeal = prev[sourceDate]?.[sourceMealType];
+      const targetMeal = prev[targetDate]?.[targetMealType];
+
+      if (!sourceMeal || !targetMeal) return prev;
+
+      return {
+        ...prev,
+        [sourceDate]: {
+          ...prev[sourceDate],
+          [sourceMealType]: targetMeal,
+        },
+        [targetDate]: {
+          ...prev[targetDate],
+          [targetMealType]: sourceMeal,
+        },
+      };
+    });
+  };
+
   const handleCooked = async (date: string, mealType: MealType, meal: Meal) => {
     // Record the 'cooked' action in meal history
     try {
@@ -321,7 +345,7 @@ export default function PlannerPage() {
         'cooked',
         { date, mealType, source: 'meal-plan' }
       );
-      
+
       // Show success feedback (could add toast here)
       console.log(`Marked "${meal.name}" as cooked`);
     } catch (error) {
@@ -337,10 +361,10 @@ export default function PlannerPage() {
         'skipped',
         { date, mealType, source: 'meal-plan' }
       );
-      
+
       // Remove the meal from the plan since it was skipped
       handleRemove(date, mealType);
-      
+
       // Show success feedback (could add toast here)
       console.log(`Skipped "${meal.name}"`);
     } catch (error) {
@@ -398,16 +422,15 @@ export default function PlannerPage() {
                         const updated = isSelected
                           ? mealTypes.filter(t => t !== type && t !== 'All')
                           : mealTypes.includes('All')
-                          ? [type]
-                          : [...mealTypes.filter(t => t !== 'All'), type];
+                            ? [type]
+                            : [...mealTypes.filter(t => t !== 'All'), type];
                         handleMealTypesChange(updated.length > 0 ? updated : ['All']);
                       }
                     }}
-                    className={`px-3 py-1 text-sm rounded-md transition-colors ${
-                      mealTypes.includes(type)
-                        ? 'bg-blue-100 text-blue-700 border border-blue-300'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
+                    className={`px-3 py-1 text-sm rounded-md transition-colors ${mealTypes.includes(type)
+                      ? 'bg-blue-100 text-blue-700 border border-blue-300'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
                   >
                     {type}
                   </button>
@@ -422,22 +445,21 @@ export default function PlannerPage() {
                 {DIETARY_TYPES.map((diet) => {
                   const isSelected = dietaryTypes.includes(diet);
                   return (
-                  <button
-                    key={diet}
-                    onClick={() => {
-                      const updated = isSelected
-                        ? dietaryTypes.filter(d => d !== diet)
-                        : [...dietaryTypes, diet];
-                      handleDietaryChange(updated);
-                    }}
-                    className={`px-3 py-1 text-sm rounded-md transition-colors ${
-                      dietaryTypes.includes(diet)
+                    <button
+                      key={diet}
+                      onClick={() => {
+                        const updated = isSelected
+                          ? dietaryTypes.filter(d => d !== diet)
+                          : [...dietaryTypes, diet];
+                        handleDietaryChange(updated);
+                      }}
+                      className={`px-3 py-1 text-sm rounded-md transition-colors ${dietaryTypes.includes(diet)
                         ? 'bg-emerald-100 text-emerald-700 border border-emerald-300'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    {diet}
-                  </button>
+                        }`}
+                    >
+                      {diet}
+                    </button>
                   );
                 })}
               </div>
@@ -481,6 +503,7 @@ export default function PlannerPage() {
               weekStart={weekStart}
               meals={meals}
               onMealDrop={handleMealDrop}
+              onMealSwap={handleMealSwap}
               onRemove={handleRemove}
               onDuplicate={handleDuplicate}
               onCooked={handleCooked}
@@ -515,22 +538,9 @@ export default function PlannerPage() {
                 'Save Plan'
               )}
             </button>
-            <button
-              onClick={() => setShowShoppingList(true)}
-              className="flex-1 sm:flex-none px-6 py-3 bg-emerald-600 text-white font-medium rounded-lg hover:bg-emerald-700 shadow-sm transition-colors text-lg"
-            >
-              Shopping List
-            </button>
           </div>
         </div>
       </div>
-
-      {/* Shopping List Modal */}
-      {showShoppingList && (
-        <ShoppingList
-          onClose={() => setShowShoppingList(false)}
-        />
-      )}
     </div>
   );
 }
