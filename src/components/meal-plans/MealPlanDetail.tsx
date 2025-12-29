@@ -161,6 +161,13 @@ export function MealPlanDetail({ mealPlanId }: { mealPlanId: string }) {
             </div>
 
             <div className="flex items-center gap-3">
+              <Link
+                href={`/meal-plans/${mealPlanId}/shopping-list`}
+                className="px-4 py-2 bg-green-600 text-white font-medium rounded-md hover:bg-green-700 transition-colors"
+                data-testid="shopping-list-button"
+              >
+                Shopping List
+              </Link>
               <button
                 type="button"
                 onClick={handlePrint}
@@ -242,6 +249,7 @@ export function MealPlanDetail({ mealPlanId }: { mealPlanId: string }) {
         confirmText="Delete"
         cancelText="Cancel"
       />
+
     </>
   );
 }
