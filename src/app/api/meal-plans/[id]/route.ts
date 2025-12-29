@@ -49,7 +49,8 @@ export async function GET(
           id,
           name,
           meal_type,
-          image_url
+          image_url,
+          ingredients
         )
       `
       )
@@ -63,9 +64,9 @@ export async function GET(
     const meals: Record<
       string,
       {
-        breakfast?: { id: string; name: string; type: string; thumbnail?: string };
-        lunch?: { id: string; name: string; type: string; thumbnail?: string };
-        dinner?: { id: string; name: string; type: string; thumbnail?: string };
+        breakfast?: { id: string; name: string; type: string; thumbnail?: string; ingredients?: unknown[] };
+        lunch?: { id: string; name: string; type: string; thumbnail?: string; ingredients?: unknown[] };
+        dinner?: { id: string; name: string; type: string; thumbnail?: string; ingredients?: unknown[] };
       }
     > = {};
 
@@ -75,12 +76,28 @@ export async function GET(
         meals[date] = {};
       }
 
-      const meal = pm.meals as { id: number; name: string; meal_type: string; image_url?: string };
+      const meal = pm.meals as { id: number; name: string; meal_type: string; image_url?: string; ingredients?: unknown };
+      
+      // Parse ingredients if they're stored as a string
+      let parsedIngredients: unknown[] = [];
+      if (meal.ingredients) {
+        if (typeof meal.ingredients === 'string') {
+          try {
+            parsedIngredients = JSON.parse(meal.ingredients);
+          } catch {
+            parsedIngredients = [];
+          }
+        } else if (Array.isArray(meal.ingredients)) {
+          parsedIngredients = meal.ingredients;
+        }
+      }
+      
       meals[date][pm.meal_type as 'breakfast' | 'lunch' | 'dinner'] = {
         id: meal.id.toString(),
         name: meal.name,
         type: meal.meal_type,
         thumbnail: meal.image_url,
+        ingredients: parsedIngredients,
       };
     }
 
