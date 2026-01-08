@@ -4,40 +4,8 @@ import { createClient } from '@supabase/supabase-js';
 // Use service role client to bypass RLS for public access
 const supabaseServiceRole = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.EDGE_SERVICE_ROLE_KEY!
 );
-
-interface MealPlanShare {
-  id: number;
-  meal_plan_id: number;
-  include_details: boolean;
-  expires_at: string | null;
-  created_at: string;
-  meal_plans: {
-    id: number;
-    week_start_date: string;
-    week_end_date: string;
-    created_at: string;
-  };
-}
-
-interface PlannedMeal {
-  id: number;
-  meal_date: string;
-  meal_type: string;
-  meals: {
-    id: number;
-    name: string;
-    description: string | null;
-    prep_time: number | null;
-    cook_time: number | null;
-    servings: number | null;
-    ingredients?: any;
-    instructions?: string | null;
-    dietary_tags: string[] | null;
-    created_at: string;
-  };
-}
 
 export async function GET(
   _request: NextRequest,
@@ -61,8 +29,8 @@ export async function GET(
         created_at,
         meal_plans!inner(
           id,
-          week_start_date,
-          week_end_date,
+          start_date,
+          end_date,
           created_at
         )
       `)
@@ -73,10 +41,8 @@ export async function GET(
       return NextResponse.json({ error: 'Share not found' }, { status: 404 });
     }
 
-    const typedShare = share as MealPlanShare;
-
     // Check if share has expired
-    if (typedShare.expires_at && new Date(typedShare.expires_at) < new Date()) {
+    if (share.expires_at && new Date(share.expires_at) < new Date()) {
       return NextResponse.json({ error: 'Share has expired' }, { status: 410 });
     }
 
@@ -85,22 +51,19 @@ export async function GET(
       .from('planned_meals')
       .select(`
         id,
-        meal_date,
+        planned_for_date,
         meal_type,
         meals!inner(
           id,
           name,
           description,
-          prep_time,
-          cook_time,
-          servings,
-          ${typedShare.include_details ? 'ingredients, instructions,' : ''}
-          dietary_tags,
+          ${share.include_details ? 'ingredients, instructions,' : ''}
+          tags,
           created_at
         )
       `)
-      .eq('meal_plan_id', typedShare.meal_plan_id)
-      .order('meal_date')
+      .eq('meal_plan_id', share.meal_plan_id)
+      .order('planned_for_date')
       .order('meal_type');
 
     if (mealsError) {
@@ -108,23 +71,22 @@ export async function GET(
       return NextResponse.json({ error: 'Failed to fetch meal plan data' }, { status: 500 });
     }
 
-    const typedPlannedMeals = plannedMeals as PlannedMeal[];
-
     // Structure the response data (sanitized, no user PII)
+    const mealPlanData = Array.isArray(share.meal_plans) ? share.meal_plans[0] : share.meal_plans;
     const mealPlan = {
-      id: typedShare.meal_plans.id,
-      weekStartDate: typedShare.meal_plans.week_start_date,
-      weekEndDate: typedShare.meal_plans.week_end_date,
-      createdAt: typedShare.meal_plans.created_at,
-      sharedAt: typedShare.created_at,
-      includeDetails: typedShare.include_details
+      id: mealPlanData.id,
+      weekStartDate: mealPlanData.start_date,
+      weekEndDate: mealPlanData.end_date,
+      createdAt: mealPlanData.created_at,
+      sharedAt: share.created_at,
+      includeDetails: share.include_details
     };
 
     // Group meals by date and type
     const mealsByDate: Record<string, Record<string, any>> = {};
     
-    typedPlannedMeals.forEach(plannedMeal => {
-      const dateKey = plannedMeal.meal_date;
+    plannedMeals.forEach((plannedMeal: any) => {
+      const dateKey = plannedMeal.planned_for_date;
       if (!mealsByDate[dateKey]) {
         mealsByDate[dateKey] = {};
       }
@@ -133,11 +95,8 @@ export async function GET(
         id: plannedMeal.meals.id,
         name: plannedMeal.meals.name,
         description: plannedMeal.meals.description,
-        prepTime: plannedMeal.meals.prep_time,
-        cookTime: plannedMeal.meals.cook_time,
-        servings: plannedMeal.meals.servings,
-        dietaryTags: plannedMeal.meals.dietary_tags,
-        ...(typedShare.include_details && {
+        tags: plannedMeal.meals.tags,
+        ...(share.include_details && {
           ingredients: plannedMeal.meals.ingredients,
           instructions: plannedMeal.meals.instructions
         })

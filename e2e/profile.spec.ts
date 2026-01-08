@@ -192,4 +192,71 @@ test.describe('Profile Management', () => {
     // Should navigate to reset-password page
     await page.waitForURL('**/reset-password');
   });
+
+  test('can initiate email change', async ({ page }) => {
+    await page.goto('/profile');
+    await waitForPageLoad(page);
+
+    // Should see edit email button
+    const editEmailBtn = page.getByTestId('edit-email-button');
+    await expect(editEmailBtn).toBeVisible();
+
+    // Click edit email button
+    await editEmailBtn.click();
+
+    // Should show email edit form
+    await expect(page.getByTestId('new-email-input')).toBeVisible();
+    await expect(page.getByTestId('cancel-email-button')).toBeVisible();
+    await expect(page.getByTestId('save-email-button')).toBeVisible();
+
+    // Enter new email
+    const newEmail = 'newemail@example.com';
+    await page.getByTestId('new-email-input').fill(newEmail);
+
+    // Save new email
+    await page.getByTestId('save-email-button').click();
+
+    // Should show verification message
+    await expect(page.locator('text=/Verification link sent/')).toBeVisible();
+    
+    // Should return to read-only view
+    await expect(page.getByTestId('profile-email')).toBeVisible();
+    await expect(page.getByTestId('edit-email-button')).toBeVisible();
+  });
+
+  test('can cancel email change', async ({ page }) => {
+    await page.goto('/profile');
+    await waitForPageLoad(page);
+
+    // Start email change
+    await page.getByTestId('edit-email-button').click();
+    
+    // Enter some text
+    await page.getByTestId('new-email-input').fill('test@example.com');
+
+    // Cancel edit
+    await page.getByTestId('cancel-email-button').click();
+
+    // Should return to read-only view
+    await expect(page.getByTestId('profile-email')).toBeVisible();
+    await expect(page.getByTestId('edit-email-button')).toBeVisible();
+    await expect(page.getByTestId('new-email-input')).not.toBeVisible();
+  });
+
+  test('email validation works', async ({ page }) => {
+    await page.goto('/profile');
+    await waitForPageLoad(page);
+
+    // Start email change
+    await page.getByTestId('edit-email-button').click();
+
+    // Try to save without entering email
+    await expect(page.getByTestId('save-email-button')).toBeDisabled();
+
+    // Enter invalid email
+    await page.getByTestId('new-email-input').fill('invalid-email');
+    
+    // Save button should be disabled for invalid email
+    await expect(page.getByTestId('save-email-button')).toBeDisabled();
+  });
 });

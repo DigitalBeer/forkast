@@ -1,11 +1,14 @@
 'use client';
 
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format, parseISO } from 'date-fns';
 import Link from 'next/link';
+import { Share2 } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { PrintableMealPlan } from '@/components/meal-plans/PrintableMealPlan';
+import { ShareModal } from '@/components/plan/ShareModal';
 
 interface Meal {
   id: string;
@@ -28,6 +31,7 @@ interface MealPlan {
 }
 
 export default function PlanViewPage() {
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const { data: mealPlan, isLoading, error, refetch } = useQuery<MealPlan | null>({
     queryKey: ['latest-meal-plan'],
     queryFn: async () => {
@@ -105,6 +109,14 @@ export default function PlanViewPage() {
             <div className="flex items-center gap-3">
               <button
                 type="button"
+                onClick={() => setIsShareModalOpen(true)}
+                className="flex items-center gap-1 px-4 py-2 bg-white text-gray-800 font-medium rounded-md border border-gray-200 hover:bg-gray-50 transition-colors"
+              >
+                <Share2 className="w-4 h-4" />
+                Share
+              </button>
+              <button
+                type="button"
                 onClick={handlePrint}
                 disabled={!canPrint}
                 className="px-4 py-2 bg-white text-gray-800 font-medium rounded-md border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
@@ -172,6 +184,15 @@ export default function PlanViewPage() {
           </div>
         </div>
       </div>
+
+      {/* Share Modal */}
+      {mealPlan && (
+        <ShareModal
+          isOpen={isShareModalOpen}
+          onClose={() => setIsShareModalOpen(false)}
+          mealPlanId={mealPlan.id}
+        />
+      )}
 
       <PrintableMealPlan mealPlan={mealPlan} />
     </>

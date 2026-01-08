@@ -5,11 +5,13 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format, parseISO } from 'date-fns';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { Share2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { PrintableMealPlan } from '@/components/meal-plans/PrintableMealPlan';
 import { ConfirmationModal } from '@/components/common/ConfirmationModal';
+import { ShareModal } from '@/components/plan/ShareModal';
 
 interface Meal {
   id: string;
@@ -37,6 +39,7 @@ export function MealPlanDetail({ mealPlanId }: { mealPlanId: string }) {
   const [isDuplicating, setIsDuplicating] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
   const { data: mealPlan, isLoading, error, refetch } = useQuery<MealPlan>({
     queryKey: ['meal-plan-detail', mealPlanId],
@@ -161,6 +164,14 @@ export function MealPlanDetail({ mealPlanId }: { mealPlanId: string }) {
             </div>
 
             <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setIsShareModalOpen(true)}
+                className="flex items-center gap-1 px-4 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors"
+              >
+                <Share2 className="w-4 h-4" />
+                Share
+              </button>
               <Link
                 href={`/meal-plans/${mealPlanId}/shopping-list`}
                 className="px-4 py-2 bg-green-600 text-white font-medium rounded-md hover:bg-green-700 transition-colors"
@@ -249,6 +260,15 @@ export function MealPlanDetail({ mealPlanId }: { mealPlanId: string }) {
         confirmText="Delete"
         cancelText="Cancel"
       />
+
+      {/* Share Modal */}
+      {mealPlan && (
+        <ShareModal
+          isOpen={isShareModalOpen}
+          onClose={() => setIsShareModalOpen(false)}
+          mealPlanId={mealPlan.id}
+        />
+      )}
 
     </>
   );

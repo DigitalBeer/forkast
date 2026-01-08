@@ -86,7 +86,7 @@ const CATEGORY_MAP: Record<string, string> = {
   paprika: "pantry", cumin: "pantry", coriander: "pantry", turmeric: "pantry",
   oregano: "pantry", thyme: "pantry", rosemary: "pantry", sage: "pantry",
   cayenne: "pantry", chili: "pantry", "chilli flakes": "pantry",
-  "black pepper": "pantry", pepper: "pantry", cinnamon: "pantry",
+  "black pepper": "pantry", cinnamon: "pantry",
   nutmeg: "pantry", vanilla: "pantry", "baking powder": "pantry",
   "baking soda": "pantry", yeast: "pantry", cocoa: "pantry", chocolate: "pantry",
 };

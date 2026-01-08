@@ -2,20 +2,17 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { format, parseISO } from 'date-fns';
-import { Calendar, Clock, Users, ChefHat } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 
 interface SharedMeal {
-  id: number;
+  id: string;
   name: string;
   description: string | null;
-  prepTime: number | null;
-  cookTime: number | null;
-  servings: number | null;
-  dietaryTags: string[] | null;
   ingredients?: unknown;
   instructions?: string | null;
+  tags: string[] | null;
 }
 
 interface SharedMealPlan {
@@ -95,51 +92,18 @@ export default function SharedMealPlanPage({ params }: { params: { token: string
     if (dayMeals?.dinner) totalMeals++;
   });
 
-  const formatTime = (minutes: number | null) => {
-    if (!minutes) return null;
-    if (minutes < 60) return `${minutes}m`;
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
-  };
-
   const renderMealCard = (meal: SharedMeal, mealType: string) => (
     <div key={`${meal.id}-${mealType}`} className="bg-white rounded-lg border border-gray-200 p-4">
-      <div className="flex items-start justify-between mb-2">
+      <div className="space-y-2">
         <h4 className="font-medium text-gray-900">{meal.name}</h4>
-        <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full capitalize">
-          {mealType}
-        </span>
-      </div>
-      
-      {meal.description && (
-        <p className="text-sm text-gray-600 mb-3">{meal.description}</p>
-      )}
-      
-      <div className="flex items-center gap-4 text-xs text-gray-500 mb-3">
-        {meal.prepTime && (
-          <div className="flex items-center gap-1">
-            <Clock className="w-3 h-3" />
-            <span>Prep: {formatTime(meal.prepTime)}</span>
-          </div>
-        )}
-        {meal.cookTime && (
-          <div className="flex items-center gap-1">
-            <ChefHat className="w-3 h-3" />
-            <span>Cook: {formatTime(meal.cookTime)}</span>
-          </div>
-        )}
-        {meal.servings && (
-          <div className="flex items-center gap-1">
-            <Users className="w-3 h-3" />
-            <span>{meal.servings} servings</span>
-          </div>
+        {meal.description && (
+          <p className="text-sm text-gray-600">{meal.description}</p>
         )}
       </div>
 
-      {meal.dietaryTags && meal.dietaryTags.length > 0 && (
+      {meal.tags && meal.tags.length > 0 && (
         <div className="flex flex-wrap gap-1 mb-3">
-          {meal.dietaryTags.map((tag) => (
+          {meal.tags.map((tag) => (
             <span key={tag} className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded">
               {tag}
             </span>

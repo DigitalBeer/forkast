@@ -4,10 +4,12 @@ import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format, parseISO } from 'date-fns';
 import Link from 'next/link';
+import { Share2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { ConfirmationModal } from '@/components/common/ConfirmationModal';
+import { ShareModal } from '@/components/plan/ShareModal';
 
 interface MealPlanHistoryItem {
   id: string;
@@ -33,6 +35,8 @@ export function MealPlanHistory() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<MealPlanHistoryItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [shareTargetId, setShareTargetId] = useState<string | null>(null);
 
   const { data, isLoading, error, refetch, isFetching } = useQuery<MealPlanHistoryResponse>({
     queryKey: ['meal-plan-history', offset, limit],
@@ -101,6 +105,11 @@ export function MealPlanHistory() {
     }
   }
 
+  const handleShare = (planId: string) => {
+    setShareTargetId(planId);
+    setShareModalOpen(true);
+  };
+
   return (
     <>
       <div className="min-h-screen bg-gray-50">
@@ -140,6 +149,18 @@ export function MealPlanHistory() {
                     </Link>
 
                     <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleShare(plan.id);
+                        }}
+                        className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors"
+                      >
+                        <Share2 className="w-3 h-3" />
+                        Share
+                      </button>
                       <div className="text-sm text-gray-700 whitespace-nowrap">
                         {plan.summary.mealCount} meal{plan.summary.mealCount === 1 ? '' : 's'}
                       </div>
@@ -216,6 +237,17 @@ export function MealPlanHistory() {
         confirmText={isDeleting ? 'Deleting...' : 'Delete'}
         cancelText="Cancel"
       />
+      {/* Share Modal */}
+      {shareTargetId && (
+        <ShareModal
+          isOpen={shareModalOpen}
+          onClose={() => {
+            setShareModalOpen(false);
+            setShareTargetId(null);
+          }}
+          mealPlanId={shareTargetId}
+        />
+      )}
     </>
   );
 }

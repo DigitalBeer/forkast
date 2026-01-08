@@ -4,7 +4,7 @@ import { useState, useEffect, FormEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuthStore } from "@/store/auth";
 import Link from "next/link";
-import { Crown, Key, Settings } from "lucide-react";
+import { Crown, Key, Settings, Mail, Edit2, Check, X } from "lucide-react";
 
 const DIETARY_OPTIONS = [
   "Vegetarian",
@@ -31,6 +31,14 @@ export default function ProfileManagement() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  
+  // Email update states
+  const [isEditingEmail, setIsEditingEmail] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
+  const [emailLoading, setEmailLoading] = useState(false);
+  const [emailMessage, setEmailMessage] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [showRefreshHint, setShowRefreshHint] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -159,6 +167,77 @@ export default function ProfileManagement() {
     );
   };
 
+  const handleEmailUpdate = async () => {
+    if (!user || !newEmail) return;
+
+    console.log('Starting email update to:', newEmail);
+    console.log('Current user email:', user.email);
+    setEmailLoading(true);
+    setEmailMessage(null);
+    setEmailError(null);
+
+    const supabase = createClient();
+    
+    try {
+      // First, let's check the current session
+      const { data: sessionData } = await supabase.auth.getSession();
+      console.log('Current session:', sessionData.session?.user?.email);
+      
+      // Initiate email update with Supabase Auth
+      const { data, error } = await supabase.auth.updateUser({
+        email: newEmail,
+      });
+
+      console.log('Email update response:', { data, error });
+
+      if (error) {
+        console.error('Email update error:', error);
+        setEmailError(error.message);
+      } else {
+        console.log('Email update successful, verification email sent');
+        console.log('Updated user data:', data.user?.email, data.user?.new_email);
+        
+        // Check if this is a secure email change (requires confirmation from both emails)
+        if (data.user?.new_email) {
+          setEmailMessage(`Verification link sent to both ${newEmail} and your current email. Both links must be clicked to confirm the change.`);
+        } else {
+          setEmailMessage(`Email updated successfully! Your email is now ${newEmail}.`);
+          // Clear the refresh hint since the change is immediate
+          setShowRefreshHint(false);
+          
+          // Note: If both old and new emails receive verification links,
+          // disable "Secure email change" in Supabase Dashboard > Authentication > Settings
+        }
+        setIsEditingEmail(false);
+        setNewEmail("");
+      }
+    } catch (err) {
+      console.error('Email update exception:', err);
+      setEmailError("Failed to update email. Please try again.");
+    }
+    
+    setEmailLoading(false);
+  };
+
+  const cancelEmailEdit = () => {
+    setIsEditingEmail(false);
+    setNewEmail("");
+    setEmailError(null);
+    setEmailMessage(null);
+  };
+
+  // Debug function to check current user status
+  const checkUserStatus = async () => {
+    const supabase = createClient();
+    const { data: sessionData } = await supabase.auth.getSession();
+    console.log('=== User Status Check ===');
+    console.log('User from store:', user?.email);
+    console.log('User from session:', sessionData.session?.user?.email);
+    console.log('User new_email:', sessionData.session?.user?.new_email);
+    console.log('User email_confirmed_at:', sessionData.session?.user?.email_confirmed_at);
+    console.log('========================');
+  };
+
   if (!user) {
     return <div>Please log in to manage your profile</div>;
   }
@@ -205,24 +284,113 @@ export default function ProfileManagement() {
         </div>
       </div>
 
+      {/* Email Update Section */}
+      <div className="bg-white rounded-lg shadow border p-4 space-y-4">
+        <div className="flex items-center gap-2 mb-4">
+          <Mail className="w-5 h-5 text-gray-600" />
+          <h2 className="text-lg font-semibold text-gray-900">Email Address</h2>
+        </div>
+
+        {/* Email */}
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <label className="block text-sm font-medium">Email</label>
+            {!isEditingEmail && (
+              <button
+                type="button"
+                onClick={() => setIsEditingEmail(true)}
+                className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                data-testid="edit-email-button"
+              >
+                <Edit2 className="w-3 h-3" />
+                Change
+              </button>
+            )}
+          </div>
+          
+          {!isEditingEmail ? (
+            <div className="flex items-center gap-2">
+              <input
+                type="email"
+                value={user.email || ""}
+                disabled
+                className="flex-1 px-3 py-2 border rounded bg-gray-50 text-gray-500"
+                data-testid="profile-email"
+              />
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <input
+                  type="email"
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  className="flex-1 px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Enter new email address"
+                  data-testid="new-email-input"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={cancelEmailEdit}
+                  className="p-2 text-gray-500 hover:text-gray-700"
+                  data-testid="cancel-email-button"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleEmailUpdate}
+                  disabled={emailLoading || !newEmail}
+                  className="p-2 text-blue-600 hover:text-blue-700 disabled:opacity-50"
+                  data-testid="save-email-button"
+                >
+                  {emailLoading ? (
+                    <div className="w-4 h-4 animate-spin border-2 border-blue-600 border-t-transparent rounded-full" />
+                  ) : (
+                    <Check className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
+              {emailError && <p className="text-red-600 text-xs">{emailError}</p>}
+              {emailMessage && <p className="text-green-600 text-xs">{emailMessage}</p>}
+            </div>
+          )}
+          
+          {!isEditingEmail && emailMessage && (
+            <p className="text-green-600 text-xs mt-1">{emailMessage}</p>
+          )}
+          
+          {showRefreshHint && (
+            <div className="mt-2 p-2 bg-blue-50 rounded text-xs">
+              <p className="text-blue-700 mb-1">After clicking the verification link, if your email hasn't updated:</p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => window.location.reload()}
+                  className="text-blue-600 underline hover:text-blue-800"
+                >
+                  Refresh the page
+                </button>
+                <span className="text-gray-400">|</span>
+                <button
+                  type="button"
+                  onClick={checkUserStatus}
+                  className="text-blue-600 underline hover:text-blue-800"
+                >
+                  Debug user status
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Profile Form */}
       <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow border p-4 space-y-6">
         <div className="flex items-center gap-2 mb-4">
           <Settings className="w-5 h-5 text-gray-600" />
           <h2 className="text-lg font-semibold text-gray-900">Account Details</h2>
-        </div>
-
-        {/* Email (read-only) */}
-        <div>
-          <label className="block text-sm font-medium mb-1">Email</label>
-          <input
-            type="email"
-            value={user.email || ""}
-            disabled
-            className="w-full px-3 py-2 border rounded bg-gray-50 text-gray-500"
-            data-testid="profile-email"
-          />
-          <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
         </div>
         
         {/* Full Name */}
