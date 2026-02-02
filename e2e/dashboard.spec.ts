@@ -120,14 +120,42 @@ test.describe('Dashboard', () => {
     }
   });
 
-  test('displays recommended meals placeholder', async ({ page }) => {
+  test('displays recommended meals widget', async ({ page }) => {
     // Verify "Recommended Meals" section exists
     const recommendedSection = page.getByText('Recommended Meals');
+    await expect(recommendedSection).toBeVisible();
     
-    if (await recommendedSection.isVisible()) {
-      // Verify "Coming Soon" badge
-      await expect(page.getByText('Coming Soon')).toBeVisible();
+    // The widget should NOT have "Coming Soon" badge anymore
+    const comingSoonBadges = page.locator('text=Coming Soon');
+    const badgeCount = await comingSoonBadges.count();
+    
+    // Only the Tips & News section should have Coming Soon
+    expect(badgeCount).toBeLessThanOrEqual(1);
+    
+    // Should have refresh button
+    const refreshButton = page.locator('[title="Refresh recommendations"]');
+    if (await refreshButton.isVisible()) {
+      await expect(refreshButton).toBeEnabled();
     }
+  });
+
+  test('recommendations widget shows empty state or recommendations', async ({ page }) => {
+    // Wait for recommendations to load
+    const recommendedSection = page.getByText('Recommended Meals');
+    await expect(recommendedSection).toBeVisible();
+    
+    // Wait for loading to complete (either empty state or recommendations appear)
+    await page.waitForTimeout(2000);
+    
+    // Should show either empty state message or recommendation cards
+    const emptyState = page.getByText('No recommendations yet');
+    const recommendationCards = page.locator('[class*="flex-shrink-0"][class*="w-40"]');
+    
+    const hasEmptyState = await emptyState.isVisible();
+    const cardCount = await recommendationCards.count();
+    
+    // Either empty state or at least one card should be visible
+    expect(hasEmptyState || cardCount > 0).toBeTruthy();
   });
 
   test('displays tips and news placeholder', async ({ page }) => {
@@ -135,8 +163,8 @@ test.describe('Dashboard', () => {
     const tipsSection = page.getByText('Tips & News');
     
     if (await tipsSection.isVisible()) {
-      // Verify "Coming Soon" badge
-      await expect(page.locator('text=Coming Soon').nth(1)).toBeVisible();
+      // Verify "Coming Soon" badge (this is the only one now)
+      await expect(page.getByText('Coming Soon')).toBeVisible();
     }
   });
 

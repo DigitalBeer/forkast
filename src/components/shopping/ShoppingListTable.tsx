@@ -88,15 +88,15 @@ export function ShoppingListTable({
                                     </td>
                                 </tr>
                                 {/* Items in Category */}
-                                {groups[category].map((item) => (
+                                {groups[category].map((item, index) => (
                                     <tr
-                                        key={item.name}
+                                        key={`${item.name}-${item.unit || 'no-unit'}-${index}`}
                                         className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${item.checked ? 'opacity-50 line-through' : ''
                                             }`}
                                     >
                                         <td className="py-2 px-3">
                                             <button
-                                                onClick={() => onToggleChecked(item.name)}
+                                                onClick={() => onToggleChecked(`${item.name.toLowerCase()}|${item.unit?.toLowerCase() || ''}`)}
                                                 className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${item.checked
                                                     ? 'bg-green-500 border-green-500 text-white'
                                                     : 'border-gray-300 hover:border-gray-400'
@@ -113,7 +113,7 @@ export function ShoppingListTable({
                                         {showHaveIt && (
                                             <td className="py-2 px-3 text-center">
                                                 <button
-                                                    onClick={() => onToggleHaveIt(item.name)}
+                                                    onClick={() => onToggleHaveIt(`${item.name.toLowerCase()}|${item.unit?.toLowerCase() || ''}`)}
                                                     className="text-xs px-2 py-1 rounded bg-gray-100 hover:bg-green-100 text-gray-600 hover:text-green-700 transition-colors"
                                                 >
                                                     Have it?

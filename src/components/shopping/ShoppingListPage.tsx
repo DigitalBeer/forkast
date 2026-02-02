@@ -2,11 +2,12 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Printer, Settings2, Eye, List } from 'lucide-react';
+import { ArrowLeft, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ShoppingListTable } from './ShoppingListTable';
 import { MealGroupedView } from './MealGroupedView';
 import { PrintableShoppingList } from './PrintableShoppingList';
+import { ViewModeToggle } from './ViewModeToggle';
 import { StaplesManager } from '@/components/plan/StaplesManager';
 import { useHaveItState } from '@/hooks/useHaveItState';
 import type { ShoppingListItem } from '@/lib/shopping/aggregate';
@@ -160,28 +161,10 @@ export function ShoppingListPage({ mealPlanId }: ShoppingListPageProps) {
                             </div>
 
                             {/* View Mode Toggle */}
-                            <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-lg">
-                                <button
-                                    onClick={() => setViewMode('by-item')}
-                                    className={`flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium transition-colors ${viewMode === 'by-item'
-                                        ? 'bg-white text-gray-900 shadow-sm'
-                                        : 'text-gray-600 hover:text-gray-900'
-                                        }`}
-                                >
-                                    <List className="w-4 h-4" />
-                                    By Item
-                                </button>
-                                <button
-                                    onClick={() => setViewMode('by-meal')}
-                                    className={`flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium transition-colors ${viewMode === 'by-meal'
-                                        ? 'bg-white text-gray-900 shadow-sm'
-                                        : 'text-gray-600 hover:text-gray-900'
-                                        }`}
-                                >
-                                    <Eye className="w-4 h-4" />
-                                    By Meal
-                                </button>
-                            </div>
+                            <ViewModeToggle
+                                viewMode={viewMode}
+                                onViewModeChange={setViewMode}
+                            />
                         </div>
                     </div>
                 </div>
@@ -199,6 +182,8 @@ export function ShoppingListPage({ mealPlanId }: ShoppingListPageProps) {
                         <MealGroupedView
                             mealPlan={mealPlan}
                             items={items}
+                            needToBuyItems={needToBuyItems}
+                            alreadyHaveItems={alreadyHaveItems}
                             onToggleHaveIt={toggleHaveIt}
                             onToggleChecked={toggleChecked}
                         />

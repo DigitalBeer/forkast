@@ -20,6 +20,7 @@ import {
     type StapleCategory,
 } from "@/lib/data/default-staples";
 import { useAuthStore } from "@/store/auth";
+import { createClient } from "@/lib/supabase/client";
 
 const STAPLES_LOCAL_STORAGE_KEY = "user_staples";
 
@@ -53,8 +54,17 @@ export function StaplesManager({ onStaplesChange, className }: StaplesManagerPro
         setError(null);
         try {
             if (user) {
+                // Get auth token
+                const supabase = createClient();
+                const { data: { session } } = await supabase.auth.getSession();
+                
                 // Load from API for authenticated users
-                const response = await fetch("/api/staples");
+                const response = await fetch("/api/staples", {
+                    headers: {
+                        'Authorization': `Bearer ${session?.access_token}`,
+                        'Content-Type': 'application/json',
+                    },
+                });
                 if (response.ok) {
                     const data = await response.json();
                     setStaples(data.staples || []);
@@ -86,10 +96,17 @@ export function StaplesManager({ onStaplesChange, className }: StaplesManagerPro
     const saveStaples = async (newStaples: Staple[]) => {
         try {
             if (user) {
+                // Get auth token
+                const supabase = createClient();
+                const { data: { session } } = await supabase.auth.getSession();
+                
                 // Save to API for authenticated users
                 const response = await fetch("/api/staples", {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    headers: {
+                        'Authorization': `Bearer ${session?.access_token}`,
+                        'Content-Type': 'application/json',
+                    },
                     body: JSON.stringify({ staples: newStaples }),
                 });
                 if (!response.ok) {
@@ -99,6 +116,7 @@ export function StaplesManager({ onStaplesChange, className }: StaplesManagerPro
                 // Save to LocalStorage for anonymous users
                 localStorage.setItem(STAPLES_LOCAL_STORAGE_KEY, JSON.stringify(newStaples));
             }
+            
             setStaples(newStaples);
             onStaplesChange?.(newStaples);
         } catch (err) {

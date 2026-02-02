@@ -86,6 +86,11 @@ export function NavBar() {
                     Account
                   </Link>
                 </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/account/staples" className="cursor-pointer" data-testid="manage-staples-link">
+                    Manage Staples
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem 
                   onClick={handleLogout}

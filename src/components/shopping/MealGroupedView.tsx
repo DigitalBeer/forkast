@@ -21,16 +21,19 @@ interface MealGroupedViewProps {
     items: ShoppingListItem[];
     onToggleHaveIt: (name: string) => void;
     onToggleChecked: (name: string) => void;
+    needToBuyItems: ExtendedItem[];
+    alreadyHaveItems: ExtendedItem[];
 }
 
 const MEAL_TYPE_ORDER = ['Breakfast', 'Lunch', 'Dinner'];
-const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 export function MealGroupedView({
     mealPlan,
-    items,
+    _items,
     onToggleHaveIt,
     onToggleChecked,
+    needToBuyItems,
+    alreadyHaveItems,
 }: MealGroupedViewProps) {
     if (!mealPlan) {
         return <p className="text-gray-500">No meal plan data available.</p>;
@@ -39,8 +42,9 @@ export function MealGroupedView({
     // Get sorted dates
     const sortedDates = Object.keys(mealPlan.meals).sort();
 
-    // Create a lookup for ingredient states from items
-    const itemsMap = new Map(items.map((item) => [item.name.toLowerCase(), item]));
+    // Create lookups for checked and have-it states
+    const checkedMap = new Map([...needToBuyItems, ...alreadyHaveItems].map((item) => [item.name.toLowerCase(), item.checked]));
+    const haveItMap = new Map([...needToBuyItems, ...alreadyHaveItems].map((item) => [item.name.toLowerCase(), item.haveIt]));
 
     const formatDate = (dateStr: string) => {
         const date = new Date(dateStr);
@@ -91,33 +95,42 @@ export function MealGroupedView({
 
                                         {ingredients.length > 0 ? (
                                             <ul className="space-y-1 ml-4">
-                                                {ingredients.map((ing, idx) => {
-                                                    const itemInfo = itemsMap.get(ing.name?.toLowerCase() || '');
-                                                    const isChecked = false; // Would need state
-                                                    const isHaveIt = false; // Would need state
+                                                {ingredients
+                                                    .filter((ing) => ing.name && ing.name.trim() !== '')
+                                                    .map((ing, idx) => {
+                                                        const isChecked = checkedMap.get(ing.name?.toLowerCase() || '') || false;
+                                                        const isHaveIt = haveItMap.get(ing.name?.toLowerCase() || '') || false;
 
-                                                    return (
-                                                        <li key={idx} className="flex items-center gap-2 text-sm">
-                                                            <button
-                                                                onClick={() => ing.name && onToggleChecked(ing.name)}
-                                                                className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${isChecked
-                                                                        ? 'bg-green-500 border-green-500 text-white'
-                                                                        : 'border-gray-300 hover:border-gray-400'
-                                                                    }`}
-                                                            >
-                                                                {isChecked && <Check className="w-3 h-3" />}
-                                                            </button>
-                                                            <span className={isChecked ? 'text-gray-400 line-through' : 'text-gray-700'}>
-                                                                {ing.quantity && `${ing.quantity} `}
-                                                                {ing.unit && `${ing.unit} `}
-                                                                {ing.name}
-                                                            </span>
-                                                            {isHaveIt && (
-                                                                <span className="text-xs text-green-600">(have it)</span>
-                                                            )}
-                                                        </li>
-                                                    );
-                                                })}
+                                                        return (
+                                                            <li key={`${ing.name}-${ing.unit || 'no-unit'}-${idx}`} className="flex items-center gap-2 text-sm">
+                                                                <button
+                                                                    onClick={() => ing.name && onToggleChecked(`${ing.name.toLowerCase()}|${ing.unit?.toLowerCase() || ''}`)}
+                                                                    className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${isChecked
+                                                                            ? 'bg-green-500 border-green-500 text-white'
+                                                                            : 'border-gray-300 hover:border-gray-400'
+                                                                        }`}
+                                                                >
+                                                                    {isChecked && <Check className="w-3 h-3" />}
+                                                                </button>
+                                                                <span className={isChecked ? 'text-gray-400 line-through' : 'text-gray-700'}>
+                                                                    {ing.quantity && `${ing.quantity} `}
+                                                                    {ing.unit && `${ing.unit} `}
+                                                                    {ing.name}
+                                                                </span>
+                                                                {!isHaveIt && (
+                                                                    <button
+                                                                        onClick={() => ing.name && onToggleHaveIt(`${ing.name.toLowerCase()}|${ing.unit?.toLowerCase() || ''}`)}
+                                                                        className="text-xs px-2 py-1 rounded bg-gray-100 hover:bg-green-100 text-gray-600 hover:text-green-700 transition-colors"
+                                                                    >
+                                                                        Have it?
+                                                                    </button>
+                                                                )}
+                                                                {isHaveIt && (
+                                                                    <span className="text-xs text-green-600">(have it)</span>
+                                                                )}
+                                                            </li>
+                                                        );
+                                                    })}
                                             </ul>
                                         ) : (
                                             <p className="text-xs text-gray-400 ml-4">No ingredients listed</p>

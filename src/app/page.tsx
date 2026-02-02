@@ -4,10 +4,11 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format, parseISO, startOfWeek, addWeeks } from 'date-fns';
 import Link from 'next/link';
-import { Calendar, Clock, TrendingUp, Utensils, Sparkles, Newspaper, Share2 } from 'lucide-react';
+import { Calendar, Clock, TrendingUp, Utensils, Newspaper, Share2 } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { ShareModal } from '@/components/plan/ShareModal';
+import { RecommendedMealsCard } from '@/components/recommendations/RecommendedMealsCard';
 
 interface Meal {
   id: string;
@@ -89,8 +90,8 @@ export default function DashboardPage() {
   if (planError) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <ErrorMessage 
-          message={planError instanceof Error ? planError.message : 'Failed to load dashboard'} 
+        <ErrorMessage
+          message={planError instanceof Error ? planError.message : 'Failed to load dashboard'}
           onRetry={() => refetch()}
         />
       </div>
@@ -122,7 +123,7 @@ export default function DashboardPage() {
       <div className="min-h-screen bg-gray-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-8">Dashboard</h1>
-          
+
           <div className="flex items-center justify-center py-16">
             <div className="text-center">
               <Utensils className="w-16 h-16 text-gray-300 mx-auto mb-4" />
@@ -144,10 +145,10 @@ export default function DashboardPage() {
 
   // Calculate current plan stats
   const sortedDates = Object.keys(mealPlan.meals).sort();
-  const weekRange = sortedDates.length > 0 
+  const weekRange = sortedDates.length > 0
     ? `${format(parseISO(sortedDates[0]), 'MMM d')} - ${format(parseISO(sortedDates[sortedDates.length - 1]), 'MMM d, yyyy')}`
     : '';
-  
+
   let currentPlanMealCount = 0;
   sortedDates.forEach(date => {
     const dayMeals = mealPlan.meals[date];
@@ -180,7 +181,7 @@ export default function DashboardPage() {
 
         {/* Widget Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          
+
           {/* Active Plan Card */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 lg:col-span-2">
             <div className="flex items-start justify-between mb-4">
@@ -209,12 +210,12 @@ export default function DashboardPage() {
                 </Link>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-4 mb-4">
               <span className="text-3xl font-bold text-gray-900">{currentPlanMealCount}</span>
               <span className="text-gray-500">meals planned</span>
             </div>
-            
+
             {sampleMeals.length > 0 && (
               <p className="text-sm text-gray-600">
                 <span className="font-medium">Preview:</span> {sampleMeals.join(', ')}
@@ -230,12 +231,12 @@ export default function DashboardPage() {
               </div>
               <h2 className="text-lg font-semibold text-gray-900">Time Saved</h2>
             </div>
-            
+
             <div className="flex items-baseline gap-2 mb-2">
               <span className="text-3xl font-bold text-green-600">{timeSavedHours}</span>
               <span className="text-gray-500">hours</span>
             </div>
-            
+
             <p className="text-sm text-gray-500">
               Based on {totalMealsPlanned} meals planned
             </p>
@@ -252,16 +253,15 @@ export default function DashboardPage() {
               </div>
               <h2 className="text-lg font-semibold text-gray-900">Upcoming Weeks</h2>
             </div>
-            
+
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {next4Weeks.map((week, i) => (
                 <div
                   key={week.start}
-                  className={`p-3 rounded-lg border ${
-                    week.hasPlans 
-                      ? 'bg-green-50 border-green-200' 
+                  className={`p-3 rounded-lg border ${week.hasPlans
+                      ? 'bg-green-50 border-green-200'
                       : 'bg-gray-50 border-gray-200'
-                  }`}
+                    }`}
                 >
                   <p className="text-xs text-gray-500 mb-1">
                     {i === 0 ? 'This Week' : i === 1 ? 'Next Week' : `Week ${i + 1}`}
@@ -292,7 +292,7 @@ export default function DashboardPage() {
                 </div>
                 <h2 className="text-lg font-semibold text-gray-900">Your Meals</h2>
               </div>
-              
+
               <div className="flex gap-4 overflow-x-auto pb-2">
                 {userMeals.slice(0, 8).map((meal) => (
                   <div key={meal.id} className="flex-shrink-0 w-32">
@@ -309,23 +309,8 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* Placeholder: Recommended Meals */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 lg:col-span-2">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-yellow-100 rounded-lg">
-                  <Sparkles className="w-5 h-5 text-yellow-600" />
-                </div>
-                <h2 className="text-lg font-semibold text-gray-900">Recommended Meals</h2>
-              </div>
-              <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full font-medium">
-                Coming Soon
-              </span>
-            </div>
-            <p className="text-sm text-gray-500">
-              Discover new meals based on what similar users enjoy. We&apos;ll suggest meals that match your taste preferences.
-            </p>
-          </div>
+          {/* Recommended Meals Widget */}
+          <RecommendedMealsCard />
 
           {/* Placeholder: News & Tips */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">

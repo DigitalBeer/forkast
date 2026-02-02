@@ -11,7 +11,7 @@ interface MealPlanDetails {
 }
 
 interface ExtendedItem extends ShoppingListItem {
-    checked: boolean;
+    isChecked: boolean;
     haveIt: boolean;
 }
 
@@ -101,25 +101,42 @@ export function PrintableShoppingList({
         @media print {
           @page {
             size: landscape;
-            margin: 0.5in;
+            margin: 0.25in;
           }
           
-          body {
+          html, body {
+            margin: 0;
+            padding: 0;
             print-color-adjust: exact;
             -webkit-print-color-adjust: exact;
+            height: auto;
           }
 
           .print-only {
             display: block !important;
+            margin: 0;
+            padding: 0;
+            height: auto;
+            overflow: visible;
           }
 
           .no-print {
             display: none !important;
           }
 
+          .column-container {
+            column-count: 3;
+            column-gap: 20px;
+            column-fill: balance;
+          }
+
           .category-section {
-            break-inside: avoid;
-            page-break-inside: avoid;
+            margin-bottom: 10px;
+          }
+
+          .category-section h3 {
+            break-after: avoid-column;
+            -webkit-column-break-after: avoid;
           }
 
           .meal-item {
@@ -127,10 +144,14 @@ export function PrintableShoppingList({
             page-break-inside: avoid;
           }
 
-          .column-container {
-            column-count: 3;
-            column-gap: 20px;
-            column-rule: 2px dashed #999;
+          .print-header {
+            margin-top: 0;
+            padding-top: 0;
+          }
+          
+          .print-header h1 {
+            margin-top: 0;
+            padding-top: 0;
           }
         }
 
@@ -141,19 +162,18 @@ export function PrintableShoppingList({
         }
       `}</style>
 
-            <div style={{ fontFamily: 'Arial, sans-serif', fontSize: '9pt' }}>
-                {/* Multi-column container - content flows naturally */}
-                <div className="column-container">
-                    {/* Header */}
-                    <div style={{ marginBottom: '12px' }}>
-                        <h1 style={{ margin: 0, fontSize: '16pt', fontWeight: 'bold' }}>Shopping List</h1>
-                        <p style={{ margin: '2px 0 0 0', fontSize: '9pt', color: '#666' }}>{formatDateRange()}</p>
-                    </div>
+            <div style={{ fontFamily: 'Arial, sans-serif', fontSize: '9pt', margin: 0, padding: 0 }}>
+                {/* Header */}
+                <header style={{ marginBottom: '12px' }} className="print-header">
+                    <h1 style={{ margin: 0, fontSize: '16pt', fontWeight: 'bold' }}>{formatDateRange()}</h1>
+                </header>
 
+                {/* Multi-column container */}
+                <div className="column-container">
                     {/* Meal Plan Section */}
-                    <div style={{ marginBottom: '12px', borderBottom: '1px solid #333', paddingBottom: '8px' }} className="category-section">
+                    <div style={{ borderBottom: '1px solid #333', paddingBottom: '8px' }} className="category-section">
                         <h2 style={{ margin: '0 0 6px 0', fontSize: '10pt', fontWeight: 'bold' }}>
-                            This Week's Meals
+                            This Week&apos;s Meals
                         </h2>
 
                         {Object.entries(mealsByType).map(([mealType, meals]) => (
@@ -173,9 +193,9 @@ export function PrintableShoppingList({
                         ))}
                     </div>
 
-                    {/* Shopping list categories - will flow across columns naturally */}
+                    {/* Shopping list categories */}
                     {sortedCategories.map((category) => (
-                        <div key={category} style={{ marginBottom: '10px' }} className="category-section">
+                        <div key={category} className="category-section">
                             <h3 style={{ margin: '0 0 3px 0', fontSize: '10pt', fontWeight: 'bold', borderBottom: '1px solid #000' }}>
                                 {CATEGORY_LABELS[category]}
                             </h3>
@@ -191,11 +211,11 @@ export function PrintableShoppingList({
                             </ul>
                         </div>
                     ))}
+                </div>
 
-                    {/* Footer */}
-                    <div style={{ marginTop: '12px', paddingTop: '6px', borderTop: '1px solid #ccc', fontSize: '7pt', color: '#666' }} className="category-section">
-                        <p style={{ margin: 0 }}>Total items: {allItems.length}</p>
-                    </div>
+                {/* Footer */}
+                <div style={{ marginTop: '12px', paddingTop: '6px', borderTop: '1px solid #ccc', fontSize: '7pt', color: '#666', pageBreakInside: 'avoid' }}>
+                    <p style={{ margin: 0 }}>Shopping List | Total items: {allItems.length}</p>
                 </div>
             </div>
         </div>
