@@ -5,6 +5,7 @@ import { useForm, useFieldArray, FieldErrors } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Image from "next/image";
+import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -14,6 +15,10 @@ import { useAuthStore } from "@/store/auth";
 import { useHydration } from "@/hooks/useHydration";
 import { MeasurementConverter } from "@/components/common/MeasurementConverter";
 import { getUnitCategory } from "@/lib/measurements/conversions";
+import { useSubscription } from "@/hooks/useSubscription";
+import { RecipeImportModal } from "./RecipeImportModal";
+import { Crown, Link as LinkIcon } from "lucide-react";
+import type { ScrapedRecipe } from "@/lib/scraping/types";
 
 // Validation schema
 // Helper function to validate URLs more flexibly
@@ -132,10 +137,12 @@ export function MealForm({ defaultValues, onSubmit, submitLabel = "Save Meal", c
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const [converterOpen, setConverterOpen] = useState<number | null>(null);
+  const [importModalOpen, setImportModalOpen] = useState(false);
   const { user } = useAuthStore();
   const { tags: availableTags, createTag } = useTags();
   const hydrated = useHydration();
-  
+  const { isPremium, loading: subscriptionLoading } = useSubscription();
+
   const handleTagsChange = (tags: string[]) => {
     setValue("tags", tags, { shouldValidate: true });
   };
@@ -164,6 +171,41 @@ export function MealForm({ defaultValues, onSubmit, submitLabel = "Save Meal", c
     console.error("Form validation errors:", errors);
   };
 
+  const handleRecipeImport = (recipe: ScrapedRecipe) => {
+    // Check if there's already content in the ingredients or instructions
+    const currentIngredients = watch("ingredients") || [];
+    const hasExistingData = (currentIngredients.some(ing => ing.name.trim().length > 0)) ||
+      (watch("instructions")?.trim().length || 0) > 0 ||
+      (watch("name")?.trim().length || 0) > 0;
+
+    if (hasExistingData) {
+      if (!window.confirm('Importing this recipe will replace your current form data. Are you sure you want to proceed?')) {
+        return;
+      }
+    }
+
+    // Populate form with scraped data
+    setValue("name", recipe.name, { shouldValidate: true });
+    setValue("sourceUrl", recipe.sourceUrl, { shouldValidate: true });
+    setValue("instructions", recipe.instructions, { shouldValidate: true });
+
+    // Convert ingredients to form format
+    const importedIngredients = recipe.ingredients.map(ing => ({
+      name: ing,
+      quantity: undefined,
+      unit: "",
+    }));
+
+    // Replace existing ingredients with imported ones
+    if (importedIngredients.length > 0) {
+      // Clear current ingredients and add new ones
+      while (ingredientFields.length > 0) {
+        removeIngredient(0);
+      }
+      importedIngredients.forEach(ing => addIngredient(ing));
+    }
+  };
+
   return (
     <form onSubmit={handleSubmit(submit, onFormError)} className={cn("space-y-6", className)} noValidate aria-label="Meal information form" aria-busy={isSubmitting} data-testid="meal-form">
       {/* Name */}
@@ -172,13 +214,13 @@ export function MealForm({ defaultValues, onSubmit, submitLabel = "Save Meal", c
           Meal Name<span className="text-destructive" aria-hidden="true">*</span>
           <span className="sr-only"> (required)</span>
         </label>
-        <Input 
-          id="name" 
-          placeholder="Tacos" 
-          aria-invalid={!!errors.name} 
-          aria-describedby={errors.name ? "name-error" : undefined} 
+        <Input
+          id="name"
+          placeholder="Tacos"
+          aria-invalid={!!errors.name}
+          aria-describedby={errors.name ? "name-error" : undefined}
           disabled={isSubmitting}
-          {...register("name", { required: true })} 
+          {...register("name", { required: true })}
           required
         />
         {errors.name && (
@@ -188,16 +230,60 @@ export function MealForm({ defaultValues, onSubmit, submitLabel = "Save Meal", c
         )}
       </div>
 
+      {/* Import from URL - Premium Feature */}
+      <div className="relative">
+        {!subscriptionLoading && (
+          isPremium ? (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setImportModalOpen(true)}
+              className="w-full sm:w-auto"
+              data-testid="import-from-url-button"
+            >
+              <LinkIcon className="w-4 h-4 mr-2" />
+              Import from URL
+            </Button>
+          ) : (
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                disabled
+                className="w-full sm:w-auto opacity-70"
+                data-testid="import-from-url-button-disabled"
+              >
+                <LinkIcon className="w-4 h-4 mr-2" />
+                Import from URL
+              </Button>
+              <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                <Crown className="w-4 h-4 text-yellow-600" />
+                <span>Premium feature -</span>
+                <Link href="/pricing" className="text-primary hover:underline">
+                  Upgrade
+                </Link>
+              </div>
+            </div>
+          )
+        )}
+      </div>
+
+      <RecipeImportModal
+        open={importModalOpen}
+        onClose={() => setImportModalOpen(false)}
+        onImport={handleRecipeImport}
+      />
+
       {/* Source URL */}
       <div>
         <label className="block text-sm font-medium mb-1" htmlFor="sourceUrl">
           Source URL
         </label>
-        <Input 
-          id="sourceUrl" 
-          type="text" 
-          placeholder="example.com/recipe" 
-          {...register("sourceUrl")} 
+        <Input
+          id="sourceUrl"
+          type="text"
+          placeholder="example.com/recipe"
+          {...register("sourceUrl")}
           onBlur={(e) => {
             // Auto-format the URL when the field loses focus
             const value = e.target.value.trim();
@@ -259,7 +345,7 @@ export function MealForm({ defaultValues, onSubmit, submitLabel = "Save Meal", c
         />
       </div>
 
-      
+
 
 
       {/* Ingredients */}
@@ -286,7 +372,7 @@ export function MealForm({ defaultValues, onSubmit, submitLabel = "Save Meal", c
                   </p>
                 )}
               </div>
-              
+
               <div className="flex gap-2 w-full sm:w-auto">
                 <div className="w-24">
                   <label htmlFor={`ingredient-${index + 1}-quantity`} className="sr-only">
@@ -303,7 +389,7 @@ export function MealForm({ defaultValues, onSubmit, submitLabel = "Save Meal", c
                     className="w-full"
                   />
                 </div>
-                
+
                 <div className="w-20">
                   <label htmlFor={`ingredient-${index + 1}-unit`} className="sr-only">
                     Unit
@@ -326,7 +412,7 @@ export function MealForm({ defaultValues, onSubmit, submitLabel = "Save Meal", c
                     <option value="pinch">pinch</option>
                   </select>
                 </div>
-                
+
                 <Button
                   type="button"
                   variant="ghost"
@@ -367,12 +453,12 @@ export function MealForm({ defaultValues, onSubmit, submitLabel = "Save Meal", c
               )}
             </div>
           ))}
-          
-          <Button 
-            type="button" 
+
+          <Button
+            type="button"
             data-testid="add-ingredient"
-            variant="secondary" 
-            size="sm" 
+            variant="secondary"
+            size="sm"
             onClick={() => {
               const newIndex = ingredientFields.length + 1;
               addIngredient({ name: "", quantity: undefined, unit: "" });
@@ -416,7 +502,7 @@ export function MealForm({ defaultValues, onSubmit, submitLabel = "Save Meal", c
           <label htmlFor="image" className="block text-sm font-medium mb-1">
             Meal Image
           </label>
-          <div 
+          <div
             className={cn(
               "flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-6 text-center transition-colors",
               "hover:border-primary/50 cursor-pointer",
@@ -452,7 +538,7 @@ export function MealForm({ defaultValues, onSubmit, submitLabel = "Save Meal", c
                     alert('Image must be less than 5MB');
                     return;
                   }
-                  
+
                   setValue("image", file);
                   const reader = new FileReader();
                   reader.onloadend = () => setImagePreview(reader.result as string);
@@ -465,7 +551,7 @@ export function MealForm({ defaultValues, onSubmit, submitLabel = "Save Meal", c
               disabled={isSubmitting}
               aria-describedby="image-upload-help"
             />
-            
+
             {imagePreview ? (
               <div className="relative w-full max-w-md h-48 mx-auto">
                 <Image
@@ -504,14 +590,14 @@ export function MealForm({ defaultValues, onSubmit, submitLabel = "Save Meal", c
               </>
             )}
           </div>
-          
+
           <p id="image-upload-help" className="text-xs text-muted-foreground mt-1">
-            {imagePreview 
+            {imagePreview
               ? 'Image will be uploaded with your recipe.'
               : 'A photo helps others visualize your recipe.'}
           </p>
         </div>
-        
+
         {imagePreview && (
           <div className="flex justify-center">
             <Button
@@ -536,20 +622,20 @@ export function MealForm({ defaultValues, onSubmit, submitLabel = "Save Meal", c
 
       {/* Form Actions */}
       <div className="flex flex-col sm:flex-row gap-3 pt-2">
-        <Button 
-          type="submit" 
+        <Button
+          type="submit"
           data-testid="save-meal"
-          disabled={isSubmitting} 
+          disabled={isSubmitting}
           className="w-full sm:w-auto"
           aria-busy={isSubmitting}
           aria-live="polite"
         >
           {isSubmitting ? "Saving..." : submitLabel}
         </Button>
-        
-        <Button 
-          type="button" 
-          variant="outline" 
+
+        <Button
+          type="button"
+          variant="outline"
           onClick={() => {
             if (window.confirm('Are you sure you want to clear the form?')) {
               reset();
