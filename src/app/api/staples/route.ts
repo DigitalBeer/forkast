@@ -15,12 +15,13 @@ export async function GET() {
 
     // Auth check
     const {
-      data: { user },
+      data: { session },
       error: userError,
-    } = await supabase.auth.getUser();
-    if (userError || !user) {
+    } = await supabase.auth.getSession();
+    if (userError || !session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const user = session.user;
 
     // Fetch user's staples
     const { data: staples, error: staplesError } = await supabase
@@ -75,12 +76,13 @@ export async function POST(req: NextRequest) {
 
     // Auth check
     const {
-      data: { user },
+      data: { session },
       error: userError,
-    } = await supabase.auth.getUser();
-    if (userError || !user) {
+    } = await supabase.auth.getSession();
+    if (userError || !session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const user = session.user;
 
     // Parse request body
     const body = await req.json();
@@ -163,12 +165,13 @@ export async function DELETE(req: NextRequest) {
 
     // Auth check
     const {
-      data: { user },
+      data: { session },
       error: userError,
-    } = await supabase.auth.getUser();
-    if (userError || !user) {
+    } = await supabase.auth.getSession();
+    if (userError || !session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const user = session.user;
 
     // Get ingredient from query params
     const url = new URL(req.url);

@@ -8,18 +8,16 @@ interface AddMealRequest {
 }
 
 export async function POST(req: NextRequest) {
-  console.log("--- [LOG] /api/recommendations/add endpoint hit ---");
-
   try {
     const supabase = await createSupabaseServerClient();
     
-    // Get authenticated user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    // Get authenticated user via session (avoids rate-limiting getUser() calls)
+    const { data: { session }, error: authError } = await supabase.auth.getSession();
     
-    if (authError || !user) {
-      console.log("[LOG] No authenticated user");
+    if (authError || !session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    const user = session.user;
 
     const body: AddMealRequest = await req.json();
     const { name, imageUrl, mealType } = body;
@@ -37,7 +35,6 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
 
     if (existingMeal) {
-      console.log(`[LOG] User already has meal: ${name}`);
       return NextResponse.json({ error: 'You already have this meal in your repertoire' }, { status: 409 });
     }
 
@@ -60,7 +57,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to add meal' }, { status: 500 });
     }
 
-    console.log(`[LOG] Added meal from recommendation: ${name} (id: ${newMeal.id})`);
     return NextResponse.json({ 
       success: true, 
       meal: newMeal 

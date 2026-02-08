@@ -12,13 +12,11 @@ export function useMeals() {
   const [error, setError] = useState<string | null>(null);
 
   const fetchMeals = useCallback(async () => {
-    console.log(`useMeals: Starting fetch. IsAuthenticated: ${!!user}`)
     setLoading(true);
     setError(null);
     try {
       const result = await getAllMeals(!!user);
       if (result.success && result.data) {
-        console.log(`useMeals: fetch complete. ${result.data.length} meals loaded.`)
         setMeals(result.data);
       } else {
         throw new Error(result.error || 'Failed to load meals');
@@ -50,9 +48,8 @@ export function useMeals() {
     }
   };
 
-  function addMealToPlan(meal: Meal) {
+  function addMealToPlan(_meal: Meal) {
     // Integration placeholder – will be implemented in plan context
-    console.log("Add to plan", meal.id);
   }
 
   return {

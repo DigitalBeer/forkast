@@ -9,7 +9,7 @@ import { MealSuggestionPanel } from '@/components/plan/MealSuggestionPanel';
 import { DIETARY_TYPES, type Meal, type MealType, type DietaryType } from '@/types/meal';
 import { getFilteredMealSuggestions } from '@/lib/services/suggestionService';
 import type { MealSuggestion } from '@/lib/services/suggestionService';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { MealHistoryService } from '@/lib/data/meal-history.service';
 
 type MealPlan = {
@@ -172,7 +172,7 @@ export default function PlannerPage() {
       }
 
       await response.json();
-      toast({ title: 'Success', description: 'Meal plan saved successfully!' });
+      toast.success('Meal plan saved successfully!');
 
       // Record meal history for each saved meal
       Object.entries(meals).forEach(([date, dayMeals]) => {
@@ -192,7 +192,7 @@ export default function PlannerPage() {
 
     } catch (error) {
       console.error('Error saving meal plan:', error);
-      toast({ title: 'Error', description: error instanceof Error ? error.message : 'Failed to save meal plan' });
+      toast.error(error instanceof Error ? error.message : 'Failed to save meal plan');
     } finally {
       setIsSaving(false);
     }
@@ -245,13 +245,6 @@ export default function PlannerPage() {
           },
         ];
       });
-
-      // Debug: Log the sorted suggestions to verify order
-      console.log('Suggestions sorted by last_prepared:', mappedSuggestions.map(s => ({
-        name: s.name,
-        last_prepared: s.last_prepared,
-        daysAgo: s.last_prepared ? Math.floor((Date.now() - new Date(s.last_prepared).getTime()) / (1000 * 60 * 60 * 24)) : 'never'
-      })));
 
       setSuggestions(mappedSuggestions.slice(0, mealCount));
     } catch (err: unknown) {
@@ -346,8 +339,7 @@ export default function PlannerPage() {
         { date, mealType, source: 'meal-plan' }
       );
 
-      // Show success feedback (could add toast here)
-      console.log(`Marked "${meal.name}" as cooked`);
+      toast.success(`Marked "${meal.name}" as cooked`);
     } catch (error) {
       console.error('Failed to record cooked action:', error);
     }
@@ -365,8 +357,7 @@ export default function PlannerPage() {
       // Remove the meal from the plan since it was skipped
       handleRemove(date, mealType);
 
-      // Show success feedback (could add toast here)
-      console.log(`Skipped "${meal.name}"`);
+      toast.success(`Skipped "${meal.name}"`);
     } catch (error) {
       console.error('Failed to record skip action:', error);
     }

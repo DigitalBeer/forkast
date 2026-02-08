@@ -115,13 +115,6 @@ export function MealForm({ defaultValues, onSubmit, submitLabel = "Save Meal", c
     },
   });
 
-  // Log when the component unmounts for debugging test pollution
-  useEffect(() => {
-    return () => {
-      console.log('MealForm unmounted');
-    };
-  }, []);
-
   const {
     fields: ingredientFields,
     append: addIngredient,
@@ -158,12 +151,10 @@ export function MealForm({ defaultValues, onSubmit, submitLabel = "Save Meal", c
   };
 
   const submit = async (data: MealFormInputs) => {
-    console.log("MealForm submit handler called.");
     const cleaned = {
       ...data,
       ingredients: (data.ingredients ?? []).filter(i => i.name.trim()),
     } as MealFormInputs;
-    console.log("Cleaned data to be submitted:", cleaned);
     await onSubmit(cleaned);
   }
 

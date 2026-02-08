@@ -1,5 +1,9 @@
 import { SupabaseAdapter, LocalStorageAdapter, getMealAdapter } from "./adapters";
 import type { StorableMeal } from "./adapters";
+import type { MealFormInputs } from "@/components/meals/MealForm";
+import type { Meal } from "@/types/meal";
+import { mealSchema } from "@/components/meals/MealForm";
+import { MealHistoryService } from "./meal-history.service";
 
 // Re-export StorableMeal for public API
 export type { StorableMeal };
@@ -34,10 +38,6 @@ export async function upsertMeal(data: MealFormInputs, id?: string): Promise<Ser
 
   return upsertMealLocal(data, id);
 }
-import type { MealFormInputs } from "@/components/meals/MealForm";
-import type { Meal } from "@/types/meal";
-import { mealSchema } from "@/components/meals/MealForm";
-import { MealHistoryService } from "./meal-history.service";
 
 // Define response types for better type safety
 export interface ServiceResponse<T> {
@@ -258,21 +258,15 @@ export async function duplicateMeal(
   }
 
   try {
-    console.log('[duplicateMeal] Starting duplication for meal:', id, 'isAuthenticated:', isAuthenticated);
-    
     // Try to get the original meal from the appropriate adapter
     const adapter = getMealAdapter(isAuthenticated);
-    console.log('[duplicateMeal] Got adapter:', adapter.constructor.name);
     
     let originalMeal = await adapter.get(id);
-    console.log('[duplicateMeal] Original meal from primary adapter:', originalMeal ? originalMeal.name : 'NOT FOUND');
     
     // If authenticated but not found in Supabase, try localStorage
     if (!originalMeal && isAuthenticated) {
-      console.log('[duplicateMeal] Trying localStorage fallback...');
       const localAdapter = new LocalStorageAdapter();
       originalMeal = await localAdapter.get(id);
-      console.log('[duplicateMeal] Original meal from localStorage:', originalMeal ? originalMeal.name : 'NOT FOUND');
     }
     
     if (!originalMeal) {
@@ -293,8 +287,6 @@ export async function duplicateMeal(
       tags: originalMeal.tags || []
     };
 
-    console.log('[duplicateMeal] Meal data prepared:', mealData.name);
-
     // Validate the meal data
     const validation = mealSchema.safeParse(mealData);
     if (!validation.success) {
@@ -305,12 +297,9 @@ export async function duplicateMeal(
       };
     }
 
-    console.log('[duplicateMeal] Validation passed, creating duplicate...');
-
     // Create the duplicate
     const result = await adapter.upsert(mealData, undefined, userId);
     
-    console.log('[duplicateMeal] Duplicate created successfully:', result?.id);
     return { success: true, data: result };
   } catch (error) {
     console.error("[duplicateMeal] ERROR:", error);

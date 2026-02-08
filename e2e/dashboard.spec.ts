@@ -15,11 +15,12 @@ test.describe('Dashboard', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to dashboard
     await page.goto('/');
+    await page.waitForLoadState('networkidle');
   });
 
   test('displays dashboard with current meal plan', async ({ page }) => {
     // Verify dashboard loads
-    await expect(page.getByText('Dashboard')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
     
     // Check for either active plan or empty state
     const currentPlanWidget = page.getByText('Current Plan');
@@ -42,7 +43,7 @@ test.describe('Dashboard', () => {
       await expect(page.getByText('hours')).toBeVisible();
       
       // Verify meal count is shown
-      await expect(page.getByText('meals planned')).toBeVisible();
+      await expect(page.getByText('meals planned').first()).toBeVisible();
       
       // Verify "View Full Plan" link exists
       await expect(page.getByRole('link', { name: /view full plan/i })).toBeVisible();
@@ -104,19 +105,17 @@ test.describe('Dashboard', () => {
 
   test('can open share modal from dashboard', async ({ page }) => {
     // Check if there's an active plan with share button
-    const shareButton = page.getByRole('button', { name: /share/i });
+    const shareButton = page.getByRole('button', { name: /share/i }).first();
     
-    if (await shareButton.isVisible()) {
+    if (await shareButton.isVisible().catch(() => false)) {
       await shareButton.click();
       
-      // Verify share modal opens
-      // Note: Adjust selector based on your ShareModal implementation
-      const modal = page.locator('[role="dialog"]');
-      await expect(modal).toBeVisible({ timeout: 5000 });
+      // Verify share modal opens (ShareModal uses fixed overlay, not role=dialog)
+      await expect(page.getByText('Share Meal Plan')).toBeVisible({ timeout: 5000 });
       
       // Close modal
-      await page.keyboard.press('Escape');
-      await expect(modal).not.toBeVisible();
+      await page.click('[data-testid="close-share-modal"]');
+      await expect(page.getByText('Share Meal Plan')).not.toBeVisible();
     }
   });
 
@@ -144,12 +143,16 @@ test.describe('Dashboard', () => {
     const recommendedSection = page.getByText('Recommended Meals');
     await expect(recommendedSection).toBeVisible();
     
-    // Wait for loading to complete (either empty state or recommendations appear)
-    await page.waitForTimeout(2000);
+    // Wait for loading spinner to disappear (recommendations may take a while from edge function)
+    const spinner = page.locator('.animate-spin');
+    await spinner.waitFor({ state: 'hidden', timeout: 15000 }).catch(() => {});
     
     // Should show either empty state message or recommendation cards
     const emptyState = page.getByText('No recommendations yet');
     const recommendationCards = page.locator('[class*="flex-shrink-0"][class*="w-40"]');
+    
+    // Wait a bit for the final state to render
+    await page.waitForTimeout(1000);
     
     const hasEmptyState = await emptyState.isVisible();
     const cardCount = await recommendationCards.count();

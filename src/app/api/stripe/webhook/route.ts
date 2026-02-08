@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
           })
           .eq('id', userId);
 
-        console.log(`Subscription activated for user ${userId}`);
+        console.info(`Subscription activated for user ${userId}`);
         break;
       }
 
@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
           })
           .eq('id', profile.id);
 
-        console.log(`Subscription updated for user ${profile.id}: ${status}`);
+        console.info(`Subscription updated for user ${profile.id}: ${status}`);
         break;
       }
 
@@ -119,7 +119,7 @@ export async function POST(req: NextRequest) {
           })
           .eq('id', profile.id);
 
-        console.log(`Subscription canceled for user ${profile.id}`);
+        console.info(`Subscription canceled for user ${profile.id}`);
         break;
       }
 
@@ -135,14 +135,14 @@ export async function POST(req: NextRequest) {
           .single();
 
         if (profile) {
-          console.log(`Payment failed for user ${profile.id}`);
+          console.warn(`Payment failed for user ${profile.id}`);
           // TODO: Send email notification
         }
         break;
       }
 
       default:
-        console.log(`Unhandled event type: ${event.type}`);
+        console.info(`Unhandled Stripe event type: ${event.type}`);
     }
 
     return NextResponse.json({ received: true });

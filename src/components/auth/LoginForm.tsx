@@ -18,7 +18,6 @@ export default function LoginForm() {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    console.log('Login form submitted. Attempting to sign in...');
     try {
       const supabase = createClient();
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
@@ -30,10 +29,8 @@ export default function LoginForm() {
           setError(error.message);
         }
       } else {
-        console.log('Supabase login successful. Setting user and redirecting...');
         setUser(data.user ?? null);
         router.push("/");
-        console.log('Redirecting to dashboard');
         // Set a state to indicate redirection for testing purposes
         setRedirecting(true);
       }

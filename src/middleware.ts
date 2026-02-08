@@ -2,12 +2,14 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function middleware(req: NextRequest) {
-  const res = NextResponse.next();
-
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
     // Missing env vars in local dev – skip auth checks
-    return res;
+    return NextResponse.next();
   }
+
+  // Response must be re-created inside setAll so that route handlers
+  // receive the request with refreshed auth cookies.
+  let supabaseResponse = NextResponse.next({ request: req });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -15,17 +17,23 @@ export async function middleware(req: NextRequest) {
     {
       cookies: {
         getAll() {
-          return req.cookies.getAll().map((c) => ({ name: c.name, value: c.value }));
+          return req.cookies.getAll();
         },
-        setAll(cookies) {
-          for (const { name, value, options } of cookies) {
-            res.cookies.set({ name, value, ...options });
-          }
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => req.cookies.set(name, value));
+          supabaseResponse = NextResponse.next({ request: req });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          );
         },
       },
     }
   );
 
+  // Use getSession() instead of getUser() to avoid hitting the Supabase API
+  // on every request. getSession() reads from the cookie locally (fast) and
+  // only makes a network call when the access token needs refreshing.
+  // This avoids 429 rate limits when many workers run in parallel.
   const { data: { session } } = await supabase.auth.getSession();
 
   // Define public routes that don't require authentication
@@ -34,14 +42,15 @@ export async function middleware(req: NextRequest) {
     req.nextUrl.pathname === route || req.nextUrl.pathname.startsWith(route + '/')
   );
 
-  // If the user is not logged in and is trying to access a protected route, redirect to login.
-  if (!session && !isPublicRoute) {
+  // Only redirect page routes to login; API routes handle their own 401 responses
+  const isApiRoute = req.nextUrl.pathname.startsWith('/api');
+  if (!session && !isPublicRoute && !isApiRoute) {
     const redirectUrl = req.nextUrl.clone();
     redirectUrl.pathname = '/login';
     return NextResponse.redirect(redirectUrl);
   }
 
-  return res;
+  return supabaseResponse;
 }
 
 export const config = {
@@ -53,6 +62,6 @@ export const config = {
      * - favicon.ico (favicon file)
      * Feel free to modify this pattern to include more paths.
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };

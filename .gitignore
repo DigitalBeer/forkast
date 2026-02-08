@@ -78,5 +78,12 @@ docs/
 !docs/architecture/
 web-bundles/
 
+# Generated reports
+eslint-report.*
+repomix-output.*
+
+# Lock files (using npm)
+yarn.lock
+
 # Exclude all contents of a directory but keep the directory structure
 build/*

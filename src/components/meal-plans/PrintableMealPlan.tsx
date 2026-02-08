@@ -2,25 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
+import type { MealPlanData } from '@/types/meal';
 
-interface Meal {
-  id: string;
-  name: string;
-  type: string;
-  thumbnail?: string;
-}
-
-export interface PrintableMealPlanData {
-  startDate: string;
-  endDate: string;
-  meals: {
-    [date: string]: {
-      breakfast?: Meal;
-      lunch?: Meal;
-      dinner?: Meal;
-    };
-  };
-}
+export type PrintableMealPlanData = Omit<MealPlanData, 'id'>;
 
 export function PrintableMealPlan({ mealPlan }: { mealPlan: PrintableMealPlanData }) {
   const sortedDates = Object.keys(mealPlan.meals || {}).sort();

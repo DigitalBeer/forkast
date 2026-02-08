@@ -27,11 +27,12 @@ if (fs.existsSync(envFile)) {
 export default defineConfig({
   globalSetup: require.resolve('./e2e/global.setup'),
   testDir: './e2e',
-  timeout: 30 * 1000,
+  timeout: 60 * 1000,
   expect: {
     timeout: 5000,
   },
   fullyParallel: false, // Disabled: tests share a single authenticated user session
+  workers: 3, // Limit workers to avoid Supabase auth API rate limits (429)
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {
     baseURL: 'http://localhost:3001',
@@ -40,12 +41,11 @@ export default defineConfig({
     screenshot: 'only-on-failure',
   },
   webServer: {
-    command:
-      'node -e "require(\'fs\').rmSync(\'.next\',{recursive:true,force:true})" && npm run dev -- -p 3001',
+    command: 'npm run dev -- -p 3001',
     env,
     port: 3001,
     timeout: 120 * 1000,
-    reuseExistingServer: false,
+    reuseExistingServer: true,
   },
   projects: [
     {

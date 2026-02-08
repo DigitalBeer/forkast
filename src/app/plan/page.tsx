@@ -9,30 +9,11 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { PrintableMealPlan } from '@/components/meal-plans/PrintableMealPlan';
 import { ShareModal } from '@/components/plan/ShareModal';
-
-interface Meal {
-  id: string;
-  name: string;
-  type: string;
-  thumbnail?: string;
-}
-
-interface MealPlan {
-  id: string;
-  startDate: string;
-  endDate: string;
-  meals: {
-    [date: string]: {
-      breakfast?: Meal;
-      lunch?: Meal;
-      dinner?: Meal;
-    };
-  };
-}
+import type { MealPlanData, MealPlanMeal } from '@/types/meal';
 
 export default function PlanViewPage() {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-  const { data: mealPlan, isLoading, error, refetch } = useQuery<MealPlan | null>({
+  const { data: mealPlan, isLoading, error, refetch } = useQuery<MealPlanData | null>({
     queryKey: ['latest-meal-plan'],
     queryFn: async () => {
       const response = await fetch('/api/meal-plans');
@@ -199,7 +180,7 @@ export default function PlanViewPage() {
   );
 }
 
-function MealCard({ meal, mealType }: { meal: Meal; mealType: string }) {
+function MealCard({ meal, mealType }: { meal: MealPlanMeal; mealType: string }) {
   return (
     <div className="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors">
       <div className="flex items-start gap-3">

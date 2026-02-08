@@ -102,8 +102,6 @@ export function MealsList() {
   };
 
   const handleDuplicate = async (meal: Meal) => {
-    console.log('Duplicating meal:', meal.id, meal.name);
-    
     // Create duplicate locally with new ID
     const duplicatedMeal: Meal = {
       ...meal,

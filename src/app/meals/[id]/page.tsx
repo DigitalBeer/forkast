@@ -1,6 +1,5 @@
 "use client";
 
-import Head from "next/head";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth";
@@ -68,11 +67,7 @@ export default function MealDetailPage() {
   if (!meal) return <p className="p-4 text-sm">Meal not found.</p>;
 
   return (
-    <>
-      <Head>
-        <title>{meal.name} | Forkast</title>
-      </Head>
-      <main className="flex min-h-screen flex-col">
+    <main className="flex min-h-screen flex-col">
         {/* Header */}
         <div className="bg-white border-b">
           <div className="max-w-4xl mx-auto px-4 py-4">
@@ -192,7 +187,6 @@ export default function MealDetailPage() {
             )}
           </div>
         </div>
-      </main>
-    </>
+    </main>
   );
 }

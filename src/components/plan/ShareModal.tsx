@@ -90,7 +90,7 @@ export function ShareModal({ isOpen, onClose, mealPlanId }: ShareModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 max-h-[85vh] flex flex-col">
         <div className="flex items-center justify-between p-6 border-b">
           <div className="flex items-center gap-2">
             <Share2 className="w-5 h-5 text-blue-600" />
@@ -99,12 +99,13 @@ export function ShareModal({ isOpen, onClose, mealPlanId }: ShareModalProps) {
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600"
+            data-testid="close-share-modal"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="p-6">
+        <div className="p-6 overflow-y-auto">
           {/* Create New Share */}
           <div className="mb-6">
             <h3 className="text-sm font-medium text-gray-900 mb-3">Create New Share Link</h3>

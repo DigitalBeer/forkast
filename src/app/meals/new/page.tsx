@@ -1,6 +1,5 @@
 "use client";
 
-import Head from "next/head";
 import { useRouter } from "next/navigation";
 import { MealForm, type MealFormInputs } from "@/components/meals/MealForm";
 import { upsertMeal } from "@/lib/data/meals";
@@ -19,7 +18,6 @@ export default function NewMealPage() {
       return;
     }
 
-    console.log("NewMealPage handleSubmit called with data:", data);
     try {
       const result = await upsertMeal(data);
       if (!result.success) {
@@ -34,11 +32,7 @@ export default function NewMealPage() {
   }
 
   return (
-    <>
-      <Head>
-        <title>Add Meal | Forkast</title>
-      </Head>
-      <main className="flex min-h-screen flex-col items-center py-6 px-4">
+    <main className="flex min-h-screen flex-col items-center py-6 px-4">
         <div className="w-full max-w-lg">
           <h1 className="mb-4 text-2xl font-semibold">Add New Meal</h1>
           {loading ? (
@@ -49,7 +43,6 @@ export default function NewMealPage() {
             <MealForm onSubmit={handleSubmit} />
           )}
         </div>
-      </main>
-    </>
+    </main>
   );
 }

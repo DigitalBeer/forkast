@@ -27,10 +27,11 @@ export async function GET(req: NextRequest) {
     const supabase = await createSupabaseServerClient();
 
     // Auth
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
+    const { data: { session }, error: userError } = await supabase.auth.getSession();
+    if (userError || !session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    const user = session.user;
 
     // Ensure meal plan exists and belongs to user
     const { data: plan, error: planError } = await supabase
@@ -85,14 +86,6 @@ export async function GET(req: NextRequest) {
     }
 
     try {
-      // Log the meals data for debugging
-      console.log(`[${requestId}] Processing ${meals.length} meals for aggregation`);
-      meals.forEach((m, idx) => {
-        console.log(`[${requestId}] Meal ${idx}: id=${m.id}, name=${m.name}, ingredients type=${typeof m.ingredients}, value=`, 
-          typeof m.ingredients === 'string' ? m.ingredients.substring(0, 100) : m.ingredients
-        );
-      });
-
       const items = aggregateFromMeals(
         meals.map((m) => ({ id: m.id, name: m.name, ingredients: m.ingredients }))
       );

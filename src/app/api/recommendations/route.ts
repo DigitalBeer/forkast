@@ -11,16 +11,13 @@ export interface UserRecommendation {
 }
 
 export async function GET(req: NextRequest) {
-  console.log("--- [LOG] /api/recommendations endpoint hit ---");
-
   try {
     const supabase = await createSupabaseServerClient();
     
-    // Get authenticated user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    // Get authenticated user via session (avoids rate-limiting getUser() calls)
+    const { data: { session }, error: authError } = await supabase.auth.getSession();
     
-    if (authError || !user) {
-      console.log("[LOG] No authenticated user, returning empty recommendations");
+    if (authError || !session?.user) {
       return NextResponse.json([], { status: 200 });
     }
 
@@ -28,19 +25,9 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const limit = parseInt(searchParams.get('limit') || '5', 10);
 
-    // Get the session for auth token
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (!session) {
-      console.log("[LOG] No session, returning empty recommendations");
-      return NextResponse.json([], { status: 200 });
-    }
-
     // Call the Edge Function
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const functionUrl = `${supabaseUrl}/functions/v1/get-user-recommendations`;
-    
-    console.log(`[LOG] Calling Edge Function at: ${functionUrl}`);
     
     const response = await fetch(functionUrl, {
       method: 'POST',
@@ -60,7 +47,6 @@ export async function GET(req: NextRequest) {
 
     const recommendations: UserRecommendation[] = await response.json();
     
-    console.log(`[LOG] Returning ${recommendations.length} recommendations from Edge Function`);
     return NextResponse.json(recommendations.slice(0, limit), { status: 200 });
 
   } catch (error) {

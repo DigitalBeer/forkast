@@ -5,7 +5,7 @@ import { Check, ChevronDown, ChevronUp } from 'lucide-react';
 import type { ShoppingListItem } from '@/lib/shopping/aggregate';
 
 interface ExtendedItem extends ShoppingListItem {
-    checked: boolean;
+    isChecked: boolean;
     haveIt: boolean;
 }
 
@@ -91,18 +91,19 @@ export function ShoppingListTable({
                                 {groups[category].map((item, index) => (
                                     <tr
                                         key={`${item.name}-${item.unit || 'no-unit'}-${index}`}
-                                        className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${item.checked ? 'opacity-50 line-through' : ''
+                                        className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${item.isChecked ? 'opacity-50 line-through' : ''
                                             }`}
                                     >
                                         <td className="py-2 px-3">
                                             <button
                                                 onClick={() => onToggleChecked(`${item.name.toLowerCase()}|${item.unit?.toLowerCase() || ''}`)}
-                                                className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${item.checked
+                                                data-testid="check-item"
+                                                className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${item.isChecked
                                                     ? 'bg-green-500 border-green-500 text-white'
                                                     : 'border-gray-300 hover:border-gray-400'
                                                     }`}
                                             >
-                                                {item.checked && <Check className="w-3 h-3" />}
+                                                {item.isChecked && <Check className="w-3 h-3" />}
                                             </button>
                                         </td>
                                         <td className="py-2 px-3 text-gray-900">{item.name}</td>
@@ -147,6 +148,7 @@ export function ShoppingListTable({
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                 <button
                     onClick={() => setHaveItExpanded(!haveItExpanded)}
+                    data-testid="toggle-have-it-section"
                     className="w-full px-4 py-3 bg-green-50 border-b border-green-100 flex items-center justify-between"
                 >
                     <h2 className="font-semibold text-green-900 flex items-center gap-2">

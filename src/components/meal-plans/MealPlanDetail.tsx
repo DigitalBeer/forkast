@@ -12,26 +12,7 @@ import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { PrintableMealPlan } from '@/components/meal-plans/PrintableMealPlan';
 import { ConfirmationModal } from '@/components/common/ConfirmationModal';
 import { ShareModal } from '@/components/plan/ShareModal';
-
-interface Meal {
-  id: string;
-  name: string;
-  type: string;
-  thumbnail?: string;
-}
-
-interface MealPlan {
-  id: string;
-  startDate: string;
-  endDate: string;
-  meals: {
-    [date: string]: {
-      breakfast?: Meal;
-      lunch?: Meal;
-      dinner?: Meal;
-    };
-  };
-}
+import type { MealPlanData, MealPlanMeal } from '@/types/meal';
 
 export function MealPlanDetail({ mealPlanId }: { mealPlanId: string }) {
   const router = useRouter();
@@ -41,7 +22,7 @@ export function MealPlanDetail({ mealPlanId }: { mealPlanId: string }) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
-  const { data: mealPlan, isLoading, error, refetch } = useQuery<MealPlan>({
+  const { data: mealPlan, isLoading, error, refetch } = useQuery<MealPlanData>({
     queryKey: ['meal-plan-detail', mealPlanId],
     queryFn: async () => {
       const response = await fetch(`/api/meal-plans/${mealPlanId}`);
@@ -54,7 +35,7 @@ export function MealPlanDetail({ mealPlanId }: { mealPlanId: string }) {
         }
         throw new Error('Failed to load meal plan');
       }
-      return (await response.json()) as MealPlan;
+      return (await response.json()) as MealPlanData;
     },
     staleTime: 60 * 1000,
   });
@@ -274,7 +255,7 @@ export function MealPlanDetail({ mealPlanId }: { mealPlanId: string }) {
   );
 }
 
-function MealCard({ meal, mealType }: { meal: Meal; mealType: string }) {
+function MealCard({ meal, mealType }: { meal: MealPlanMeal; mealType: string }) {
   return (
     <div className="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors">
       <div className="flex items-start gap-3">

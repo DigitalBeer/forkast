@@ -64,7 +64,6 @@ class SupabaseAdapter implements StorageAdapter {
     };
     const { data: meal, error } = await supabase.from("meals").upsert(payload).select().single();
     if (error) throw error;
-    console.log("SupabaseAdapter.upsert returned:", meal);
     return meal as StorableMeal;
   }
 

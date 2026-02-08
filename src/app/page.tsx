@@ -9,27 +9,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { ShareModal } from '@/components/plan/ShareModal';
 import { RecommendedMealsCard } from '@/components/recommendations/RecommendedMealsCard';
-
-interface Meal {
-  id: string;
-  name: string;
-  type: string;
-  thumbnail?: string;
-  image_url?: string;
-}
-
-interface MealPlan {
-  id: string;
-  startDate: string;
-  endDate: string;
-  meals: {
-    [date: string]: {
-      breakfast?: Meal;
-      lunch?: Meal;
-      dinner?: Meal;
-    };
-  };
-}
+import type { MealPlanData, MealPlanMeal } from '@/types/meal';
 
 interface MealPlanSummary {
   id: number;
@@ -42,7 +22,7 @@ const MINUTES_PER_MEAL_PLANNING = 15;
 
 export default function DashboardPage() {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-  const { data: mealPlan, isLoading: planLoading, error: planError, refetch } = useQuery<MealPlan | null>({
+  const { data: mealPlan, isLoading: planLoading, error: planError, refetch } = useQuery<MealPlanData | null>({
     queryKey: ['latest-meal-plan'],
     queryFn: async () => {
       const response = await fetch('/api/meal-plans');
@@ -68,13 +48,13 @@ export default function DashboardPage() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const { data: userMeals } = useQuery<Meal[]>({
+  const { data: userMeals } = useQuery<MealPlanMeal[]>({
     queryKey: ['user-meals-with-images'],
     queryFn: async () => {
       const response = await fetch('/api/meals?limit=10');
       if (!response.ok) return [];
       const data = await response.json();
-      return (data.meals || []).filter((m: Meal) => m.image_url || m.thumbnail);
+      return (data.meals || []).filter((m: MealPlanMeal) => m.image_url || m.thumbnail);
     },
     staleTime: 5 * 60 * 1000,
   });

@@ -2,18 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 export async function POST(req: NextRequest) {
-  console.log("--- [LOG] /api/recommendations/dismiss endpoint hit ---");
-
   try {
     const supabase = await createSupabaseServerClient();
     
-    // Get authenticated user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    // Get authenticated user via session (avoids rate-limiting getUser() calls)
+    const { data: { session }, error: authError } = await supabase.auth.getSession();
     
-    if (authError || !user) {
-      console.log("[LOG] No authenticated user");
+    if (authError || !session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    const user = session.user;
 
     const body = await req.json();
     const { mealName } = body;
@@ -43,7 +41,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to dismiss recommendation' }, { status: 500 });
     }
 
-    console.log(`[LOG] Dismissed recommendation: ${mealName} for user ${user.id}`);
     return NextResponse.json({ success: true }, { status: 200 });
 
   } catch (error) {

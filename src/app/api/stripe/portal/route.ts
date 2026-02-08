@@ -6,15 +6,16 @@ export async function POST(req: NextRequest) {
   try {
     const supabase = await createSupabaseServerClient();
     
-    // Get authenticated user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    // Get authenticated user via session (avoids rate-limiting getUser() calls)
+    const { data: { session: authSession }, error: authError } = await supabase.auth.getSession();
     
-    if (authError || !user) {
+    if (authError || !authSession?.user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
+    const user = authSession.user;
 
     // Get user's Stripe customer ID
     const { data: profile } = await supabase

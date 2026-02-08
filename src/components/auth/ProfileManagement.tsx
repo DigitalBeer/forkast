@@ -61,7 +61,6 @@ export default function ProfileManagement() {
 
     // If no profile row exists, create one
     if (error?.code === 'PGRST116') {
-      console.log("No profile found, creating one for user:", user.id);
       const { data: newProfile, error: insertError } = await supabase
         .from("profiles")
         .insert({
@@ -115,15 +114,11 @@ export default function ProfileManagement() {
       measurement_system: measurementSystem,
     };
     
-    console.log("Attempting profile update with:", fullUpdateData);
-    
-    const { error, data: updateResult } = await supabase
+    const { error, data: _updateResult } = await supabase
       .from("profiles")
       .update(fullUpdateData)
       .eq("id", user.id)
       .select();
-
-    console.log("Update result:", { error, updateResult });
 
     if (error) {
       // Check if it's a column error (migration not applied)
@@ -170,8 +165,6 @@ export default function ProfileManagement() {
   const handleEmailUpdate = async () => {
     if (!user || !newEmail) return;
 
-    console.log('Starting email update to:', newEmail);
-    console.log('Current user email:', user.email);
     setEmailLoading(true);
     setEmailMessage(null);
     setEmailError(null);
@@ -180,23 +173,15 @@ export default function ProfileManagement() {
     
     try {
       // First, let's check the current session
-      const { data: sessionData } = await supabase.auth.getSession();
-      console.log('Current session:', sessionData.session?.user?.email);
-      
       // Initiate email update with Supabase Auth
       const { data, error } = await supabase.auth.updateUser({
         email: newEmail,
       });
 
-      console.log('Email update response:', { data, error });
-
       if (error) {
         console.error('Email update error:', error);
         setEmailError(error.message);
       } else {
-        console.log('Email update successful, verification email sent');
-        console.log('Updated user data:', data.user?.email, data.user?.new_email);
-        
         // Check if this is a secure email change (requires confirmation from both emails)
         if (data.user?.new_email) {
           setEmailMessage(`Verification link sent to both ${newEmail} and your current email. Both links must be clicked to confirm the change.`);
@@ -224,18 +209,6 @@ export default function ProfileManagement() {
     setNewEmail("");
     setEmailError(null);
     setEmailMessage(null);
-  };
-
-  // Debug function to check current user status
-  const checkUserStatus = async () => {
-    const supabase = createClient();
-    const { data: sessionData } = await supabase.auth.getSession();
-    console.log('=== User Status Check ===');
-    console.log('User from store:', user?.email);
-    console.log('User from session:', sessionData.session?.user?.email);
-    console.log('User new_email:', sessionData.session?.user?.new_email);
-    console.log('User email_confirmed_at:', sessionData.session?.user?.email_confirmed_at);
-    console.log('========================');
   };
 
   if (!user) {
@@ -371,14 +344,6 @@ export default function ProfileManagement() {
                   className="text-blue-600 underline hover:text-blue-800"
                 >
                   Refresh the page
-                </button>
-                <span className="text-gray-400">|</span>
-                <button
-                  type="button"
-                  onClick={checkUserStatus}
-                  className="text-blue-600 underline hover:text-blue-800"
-                >
-                  Debug user status
                 </button>
               </div>
             </div>

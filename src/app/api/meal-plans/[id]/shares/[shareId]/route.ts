@@ -9,11 +9,12 @@ export async function DELETE(
     const supabase = await createSupabaseServerClient();
     
     // Get current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
+    const { data: { session }, error: authError } = await supabase.auth.getSession();
+    if (authError || !session?.user) {
       console.error('Auth error:', authError);
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    const user = session.user;
 
     const resolvedParams = await params;
     const mealPlanId = parseInt(resolvedParams.id);

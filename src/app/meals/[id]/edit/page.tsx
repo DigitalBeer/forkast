@@ -1,6 +1,5 @@
 "use client";
 
-import Head from "next/head";
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useAuthStore } from "@/store/auth";
@@ -111,16 +110,11 @@ export default function EditMealPage() {
   };
 
   return (
-    <>
-      <Head>
-        <title>Edit Meal | Forkast</title>
-      </Head>
-      <main className="flex min-h-screen flex-col items-center py-6 px-4">
+    <main className="flex min-h-screen flex-col items-center py-6 px-4">
         <div className="w-full max-w-lg">
           <h1 className="mb-4 text-2xl font-semibold">Edit Meal</h1>
           <MealForm defaultValues={defaults} onSubmit={handleSubmit} />
         </div>
-      </main>
-    </>
+    </main>
   );
 }

@@ -12,13 +12,14 @@ export async function POST(req: NextRequest) {
 
     // Check authentication
     const {
-      data: { user },
+      data: { session },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await supabase.auth.getSession();
 
-    if (authError || !user) {
+    if (authError || !session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    const user = session.user;
 
     // Check premium subscription status
     const { data: profile } = await supabase

@@ -12,7 +12,7 @@ interface MealPlanDetails {
 }
 
 interface ExtendedItem extends ShoppingListItem {
-    checked: boolean;
+    isChecked: boolean;
     haveIt: boolean;
 }
 
@@ -43,7 +43,7 @@ export function MealGroupedView({
     const sortedDates = Object.keys(mealPlan.meals).sort();
 
     // Create lookups for checked and have-it states
-    const checkedMap = new Map([...needToBuyItems, ...alreadyHaveItems].map((item) => [item.name.toLowerCase(), item.checked]));
+    const checkedMap = new Map([...needToBuyItems, ...alreadyHaveItems].map((item) => [item.name.toLowerCase(), item.isChecked]));
     const haveItMap = new Map([...needToBuyItems, ...alreadyHaveItems].map((item) => [item.name.toLowerCase(), item.haveIt]));
 
     const formatDate = (dateStr: string) => {

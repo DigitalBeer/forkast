@@ -37,24 +37,15 @@ export async function POST(req: NextRequest) {
     const supabase = await createSupabaseServerClient();
     
     // Get authenticated user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { session }, error: authError } = await supabase.auth.getSession();
     
-    console.log('Auth check:', { 
-      userId: user?.id, 
-      authError: authError?.message,
-      userEmail: user?.email
-    });
-    
-    if (authError || !user) {
+    if (authError || !session?.user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
-
-    // Prepare planned meals data for batch RPC
-    console.log('Received meal plan data:', { startDate, endDate, meals });
-    console.log('User ID:', user.id);
+    const user = session.user;
 
     const plannedMeals: Array<{
       meal_id: string;
@@ -86,21 +77,12 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Insert meal plan and planned meals directly
-    console.log('Attempting to create meal plan with data:', {
-      user_id: user.id,
-      start_date: startDate,
-      end_date: endDate,
-    });
-
     // First check if tables exist
-    const { data: tables, error: tablesError } = await supabase
+    const { data: _tables, error: tablesError } = await supabase
       .from('meal_plans')
       .select('id')
       .limit(1);
     
-    console.log('Table check result:', { tables, tablesError: JSON.stringify(tablesError) });
-
     if (tablesError) {
       console.error('Table does not exist or is not accessible:', tablesError);
       return NextResponse.json(
@@ -129,15 +111,11 @@ export async function POST(req: NextRequest) {
     }
 
     // Insert all planned meals
-    console.log('Planned meals to insert:', plannedMeals);
-    
     if (plannedMeals.length > 0) {
       const mealsWithPlanId = plannedMeals.map(meal => ({
         ...meal,
         meal_plan_id: mealPlan.id,
       }));
-
-      console.log('Meals with plan ID:', mealsWithPlanId);
 
       const { error: mealsError } = await supabase
         .from('planned_meals')
@@ -174,14 +152,15 @@ export async function GET() {
     const supabase = await createSupabaseServerClient();
     
     // Get authenticated user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { session }, error: authError } = await supabase.auth.getSession();
     
-    if (authError || !user) {
+    if (authError || !session?.user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
+    const user = session.user;
 
     // Get the most recent meal plan
     const { data: mealPlan, error: planError } = await supabase

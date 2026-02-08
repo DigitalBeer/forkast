@@ -203,7 +203,8 @@ test.describe('Meal Management', () => {
     
     await mealCard.hover();
     const editButton = mealCard.getByRole('button', { name: /edit/i }).first();
-    await editButton.click({ timeout: 5000 });
+    await expect(editButton).toBeVisible({ timeout: 5000 });
+    await editButton.click();
     
     // Wait for the edit form to load and update the meal details
     await page.waitForSelector('form');

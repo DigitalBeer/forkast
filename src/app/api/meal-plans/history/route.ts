@@ -6,13 +6,14 @@ export async function GET(req: NextRequest) {
     const supabase = await createSupabaseServerClient();
 
     const {
-      data: { user },
+      data: { session },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await supabase.auth.getSession();
 
-    if (authError || !user) {
+    if (authError || !session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    const user = session.user;
 
     const { searchParams } = new URL(req.url);
 

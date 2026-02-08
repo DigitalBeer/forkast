@@ -41,9 +41,9 @@ async function globalSetup(config: FullConfig) {
   await page.locator('#password').fill(password);
   await page.getByRole('button', { name: 'Log In' }).click();
 
-  // Wait for successful redirect to /meals/new
+  // Wait for successful redirect away from login page
   try {
-    await page.waitForURL('**/meals/new', { timeout: 120_000 });
+    await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 120_000 });
   } catch (e) {
     await page.screenshot({ path: 'e2e/logs/login-failure.png' });
     console.error(`Login failed. Current URL: ${page.url()}`);
@@ -52,13 +52,16 @@ async function globalSetup(config: FullConfig) {
 
   await page.screenshot({ path: 'e2e/logs/after-login-redirect.png' });
 
-  // Wait for the page to be fully loaded (form visible)
+  // Wait for the page to be fully loaded (dashboard visible)
   try {
-    await page.locator('#name').waitFor({ state: 'visible', timeout: 120_000 });
+    await page.getByRole('heading', { name: 'Dashboard' }).waitFor({ state: 'visible', timeout: 120_000 });
   } catch (e) {
     await page.screenshot({ path: 'e2e/logs/after-login-not-ready.png' });
     throw new Error('Post-login page not ready. Check e2e/logs/after-login-not-ready.png');
   }
+
+  // Wait for all network activity to settle so auth cookies are fully written
+  await page.waitForLoadState('networkidle');
 
   // Save the authenticated state - this captures the exact cookies and localStorage
   // that the app created during login, ensuring perfect compatibility

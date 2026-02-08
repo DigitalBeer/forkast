@@ -9,13 +9,14 @@ export async function GET(
     const supabase = await createSupabaseServerClient();
 
     const {
-      data: { user },
+      data: { session },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await supabase.auth.getSession();
 
-    if (authError || !user) {
+    if (authError || !session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    const user = session.user;
 
     const { id } = params;
     const planId = Number.parseInt(id, 10);
@@ -125,13 +126,14 @@ export async function DELETE(
     const supabase = await createSupabaseServerClient();
 
     const {
-      data: { user },
+      data: { session },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await supabase.auth.getSession();
 
-    if (authError || !user) {
+    if (authError || !session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    const user = session.user;
 
     const { id } = params;
     const planId = Number.parseInt(id, 10);

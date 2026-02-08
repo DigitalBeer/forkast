@@ -13,14 +13,15 @@ export async function GET(request: Request) {
         const supabase = await createSupabaseServerClient();
 
     // Get the current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    const { data: { session }, error: userError } = await supabase.auth.getSession();
     
-    if (userError || !user) {
+    if (userError || !session?.user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
+    const user = session.user;
 
     // Build the query
     let query = supabase

@@ -19,6 +19,28 @@ export interface Meal {
   usage_count?: number;
 }
 
+// Meal shape returned by the meal-plans API (uses `type`/`thumbnail` instead of `meal_type`/`image_url`)
+export interface MealPlanMeal {
+  id: string;
+  name: string;
+  type: string;
+  thumbnail?: string;
+  image_url?: string;
+}
+
+export interface MealPlanData {
+  id: string;
+  startDate: string;
+  endDate: string;
+  meals: {
+    [date: string]: {
+      breakfast?: MealPlanMeal;
+      lunch?: MealPlanMeal;
+      dinner?: MealPlanMeal;
+    };
+  };
+}
+
 // Filter types for meal suggestions
 export interface MealSuggestionFilters {
   mealTypes?: string[];  // e.g., ["breakfast", "lunch", "dinner"]
