@@ -107,6 +107,7 @@ export default function EditMealPage() {
     tags: meal.tags ?? [],
     ingredients: normalizeIngredients(meal.ingredients),
     instructions: meal.instructions ?? "",
+    image_url: meal.image_url ?? "",
   };
 
   return (

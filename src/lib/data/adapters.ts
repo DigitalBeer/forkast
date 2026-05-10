@@ -37,18 +37,25 @@ export interface StorageAdapter {
 class SupabaseAdapter implements StorageAdapter {
   async upsert(data: MealFormInputs, id?: string, userId?: string) {
     const supabase = createClient();
-    let imageUrl: string | undefined;
-    const maybeImage = (data as { image?: unknown }).image;
-    if (maybeImage && maybeImage instanceof File) {
-      const file = maybeImage as File;
-      const filename = `${crypto.randomUUID()}_${file.name}`;
-      const { error: uploadError } = await supabase.storage.from("meal-images").upload(filename, file, {
-        upsert: false,
-        contentType: file.type,
-      });
-      if (uploadError && uploadError.message !== "The resource already exists") throw uploadError;
-      const { data: publicUrl } = supabase.storage.from("meal-images").getPublicUrl(filename);
-      imageUrl = publicUrl.publicUrl;
+
+    // Prefer an already-uploaded URL (set by the /api/upload/meal-image endpoint)
+    let imageUrl: string | undefined = (data as { image_url?: string }).image_url || undefined;
+
+    // Fallback: upload a raw File when image_url is not set (e.g. server-side path)
+    if (!imageUrl) {
+      const maybeImage = (data as { image?: unknown }).image;
+      if (maybeImage instanceof File && userId) {
+        const file = maybeImage;
+        const ext = file.type === 'image/webp' ? 'webp' : file.type === 'image/png' ? 'png' : 'jpg';
+        const filename = `${userId}/${crypto.randomUUID()}.${ext}`;
+        const { error: uploadError } = await supabase.storage.from("meal-images").upload(filename, file, {
+          upsert: false,
+          contentType: file.type,
+        });
+        if (uploadError && uploadError.message !== "The resource already exists") throw uploadError;
+        const { data: publicUrl } = supabase.storage.from("meal-images").getPublicUrl(filename);
+        imageUrl = publicUrl.publicUrl;
+      }
     }
 
     const payload = {

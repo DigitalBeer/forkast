@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useForm, useFieldArray, FieldErrors } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import Image from "next/image";
 import Link from "next/link";
+import { MealImageUpload } from "./MealImageUpload";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -18,6 +18,7 @@ import { getUnitCategory } from "@/lib/measurements/conversions";
 import { useSubscription } from "@/hooks/useSubscription";
 import { RecipeImportModal } from "./RecipeImportModal";
 import { Crown, Link as LinkIcon } from "lucide-react";
+import { MealTypeIcon } from "@/components/ui/MealTypeIcon";
 import type { ScrapedRecipe } from "@/lib/scraping/types";
 
 // Validation schema
@@ -89,6 +90,7 @@ export const mealSchema = z.object({
     .optional()
     .default([]),
   image: z.any().optional(),
+  image_url: z.string().optional(),
   instructions: z.string().optional(),
 });
 
@@ -112,6 +114,7 @@ export function MealForm({ defaultValues, onSubmit, submitLabel = "Save Meal", c
       sourceUrl: "",
       ingredients: [{ name: "", quantity: undefined, unit: "" }],
       instructions: "",
+      image_url: "",
     },
   });
 
@@ -127,8 +130,6 @@ export function MealForm({ defaultValues, onSubmit, submitLabel = "Save Meal", c
     }
   }, [ingredientFields.length, addIngredient]);
 
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const imageInputRef = useRef<HTMLInputElement | null>(null);
   const [converterOpen, setConverterOpen] = useState<number | null>(null);
   const [importModalOpen, setImportModalOpen] = useState(false);
   const { user } = useAuthStore();
@@ -293,17 +294,22 @@ export function MealForm({ defaultValues, onSubmit, submitLabel = "Save Meal", c
         <label className="block text-sm font-medium mb-1" htmlFor="meal_type">
           Meal Type
         </label>
-        <select
-          id="meal_type"
-          className="w-full rounded-md border border-input px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
-          {...register("meal_type")}
-        >
-          <option value="">Select meal type...</option>
-          <option value="Breakfast">Breakfast</option>
-          <option value="Lunch">Lunch</option>
-          <option value="Dinner">Dinner</option>
-          <option value="Snack">Snack</option>
-        </select>
+        <div className="flex items-center gap-2">
+          {watch("meal_type") && (
+            <MealTypeIcon type={watch("meal_type") as string} size="md" />
+          )}
+          <select
+            id="meal_type"
+            className="w-full rounded-md border border-input px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            {...register("meal_type")}
+          >
+            <option value="">Select meal type...</option>
+            <option value="Breakfast">Breakfast</option>
+            <option value="Lunch">Lunch</option>
+            <option value="Dinner">Dinner</option>
+            <option value="Snack">Snack</option>
+          </select>
+        </div>
         {errors.meal_type && <p className="text-xs text-destructive mt-1" role="alert">{errors.meal_type.message}</p>}
       </div>
 
@@ -485,130 +491,14 @@ export function MealForm({ defaultValues, onSubmit, submitLabel = "Save Meal", c
         {errors.instructions && <p className="text-xs text-destructive mt-1">{errors.instructions.message}</p>}
       </div>
 
-      {/* Submit Button */}
-
       {/* Image Upload */}
-      <div className="space-y-2">
-        <div>
-          <label htmlFor="image" className="block text-sm font-medium mb-1">
-            Meal Image
-          </label>
-          <div
-            className={cn(
-              "flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-6 text-center transition-colors",
-              "hover:border-primary/50 cursor-pointer",
-              imagePreview ? "border-transparent" : "border-input"
-            )}
-            onClick={() => document.getElementById('image')?.click()}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                document.getElementById('image')?.click();
-              }
-            }}
-            role="button"
-            tabIndex={0}
-            aria-label="Click to upload an image or drag and drop"
-          >
-            <input
-              id="image"
-              type="file"
-              accept="image/*"
-              className="hidden"
-              ref={imageInputRef}
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) {
-                  // Validate file type
-                  if (!file.type.startsWith('image/')) {
-                    alert('Please select an image file (JPEG, PNG, etc.)');
-                    return;
-                  }
-                  // Validate file size (max 5MB)
-                  if (file.size > 5 * 1024 * 1024) {
-                    alert('Image must be less than 5MB');
-                    return;
-                  }
-
-                  setValue("image", file);
-                  const reader = new FileReader();
-                  reader.onloadend = () => setImagePreview(reader.result as string);
-                  reader.readAsDataURL(file);
-                } else {
-                  setImagePreview(null);
-                  setValue("image", null);
-                }
-              }}
-              disabled={isSubmitting}
-              aria-describedby="image-upload-help"
-            />
-
-            {imagePreview ? (
-              <div className="relative w-full max-w-md h-48 mx-auto">
-                <Image
-                  src={imagePreview}
-                  alt="Preview of uploaded meal"
-                  fill
-                  className="object-contain rounded-md border p-1"
-                />
-              </div>
-            ) : (
-              <>
-                <div className="flex flex-col items-center justify-center text-muted-foreground">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="h-10 w-10 mb-2"
-                  >
-                    <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
-                    <circle cx="9" cy="9" r="2" />
-                    <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
-                  </svg>
-                  <p className="text-sm font-medium">
-                    <span className="text-primary">Click to upload</span> or drag and drop
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    SVG, PNG, JPG or GIF (max. 5MB)
-                  </p>
-                </div>
-              </>
-            )}
-          </div>
-
-          <p id="image-upload-help" className="text-xs text-muted-foreground mt-1">
-            {imagePreview
-              ? 'Image will be uploaded with your recipe.'
-              : 'A photo helps others visualize your recipe.'}
-          </p>
-        </div>
-
-        {imagePreview && (
-          <div className="flex justify-center">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setImagePreview(null);
-                setValue("image", null);
-                if (imageInputRef.current) {
-                  imageInputRef.current.value = "";
-                }
-              }}
-              className="mt-2"
-              disabled={isSubmitting}
-            >
-              Remove Image
-            </Button>
-          </div>
-        )}
+      <div>
+        <label className="block text-sm font-medium mb-1">Meal Image</label>
+        <MealImageUpload
+          currentImageUrl={defaultValues?.image_url || undefined}
+          onImageUrlChange={(url) => setValue("image_url", url ?? "", { shouldValidate: false })}
+          disabled={isSubmitting}
+        />
       </div>
 
       {/* Form Actions */}
@@ -630,10 +520,6 @@ export function MealForm({ defaultValues, onSubmit, submitLabel = "Save Meal", c
           onClick={() => {
             if (window.confirm('Are you sure you want to clear the form?')) {
               reset();
-              setImagePreview(null);
-              if (imageInputRef.current) {
-                imageInputRef.current.value = '';
-              }
             }
           }}
           disabled={isSubmitting}
