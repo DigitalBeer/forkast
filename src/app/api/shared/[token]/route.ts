@@ -4,12 +4,12 @@ import { createClient } from '@supabase/supabase-js';
 // Use service role client to bypass RLS for public access
 const supabaseServiceRole = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.EDGE_SERVICE_ROLE_KEY!
+  process.env.EDGE_SERVICE_ROLE_KEY!,
 );
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: Promise<{ token: string }> }
+  { params }: { params: Promise<{ token: string }> },
 ) {
   try {
     const { token } = await params;
@@ -21,7 +21,8 @@ export async function GET(
     // Find the share record by token
     const { data: share, error: shareError } = await supabaseServiceRole
       .from('meal_plan_shares')
-      .select(`
+      .select(
+        `
         id,
         meal_plan_id,
         include_details,
@@ -33,7 +34,8 @@ export async function GET(
           end_date,
           created_at
         )
-      `)
+      `,
+      )
       .eq('share_token', token)
       .single();
 
@@ -49,7 +51,8 @@ export async function GET(
     // Get planned meals for this meal plan
     const { data: plannedMeals, error: mealsError } = await supabaseServiceRole
       .from('planned_meals')
-      .select(`
+      .select(
+        `
         id,
         planned_for_date,
         meal_type,
@@ -61,57 +64,78 @@ export async function GET(
           tags,
           created_at
         )
-      `)
+      `,
+      )
       .eq('meal_plan_id', share.meal_plan_id)
       .order('planned_for_date')
       .order('meal_type');
 
     if (mealsError) {
       console.error('Error fetching planned meals:', mealsError);
-      return NextResponse.json({ error: 'Failed to fetch meal plan data' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Failed to fetch meal plan data' },
+        { status: 500 },
+      );
     }
 
     // Structure the response data (sanitized, no user PII)
-    const mealPlanData = Array.isArray(share.meal_plans) ? share.meal_plans[0] : share.meal_plans;
+    const mealPlanData = Array.isArray(share.meal_plans)
+      ? share.meal_plans[0]
+      : share.meal_plans;
     const mealPlan = {
       id: mealPlanData.id,
       weekStartDate: mealPlanData.start_date,
       weekEndDate: mealPlanData.end_date,
       createdAt: mealPlanData.created_at,
       sharedAt: share.created_at,
-      includeDetails: share.include_details
+      includeDetails: share.include_details,
     };
 
     // Group meals by date and type
-    const mealsByDate: Record<string, Record<string, any>> = {};
-    
-    plannedMeals.forEach((plannedMeal: any) => {
+    const mealsByDate: Record<string, Record<string, unknown>> = {};
+
+    plannedMeals.forEach(plannedMeal => {
       const dateKey = plannedMeal.planned_for_date;
       if (!mealsByDate[dateKey]) {
         mealsByDate[dateKey] = {};
       }
-      
-      const meal = {
-        id: plannedMeal.meals.id,
-        name: plannedMeal.meals.name,
-        description: plannedMeal.meals.description,
-        tags: plannedMeal.meals.tags,
-        ...(share.include_details && {
-          ingredients: plannedMeal.meals.ingredients,
-          instructions: plannedMeal.meals.instructions
-        })
+
+      const mealData = Array.isArray(plannedMeal.meals)
+        ? plannedMeal.meals[0]
+        : plannedMeal.meals;
+      const mealDetails = mealData as {
+        id: string;
+        name: string;
+        description: string | null;
+        tags: string[] | null;
+        ingredients?: unknown;
+        instructions?: string | null;
       };
-      
+      const meal = {
+        id: mealDetails.id,
+        name: mealDetails.name,
+        description: mealDetails.description,
+        tags: mealDetails.tags,
+        ...(share.include_details
+          ? {
+              ingredients: mealDetails.ingredients,
+              instructions: mealDetails.instructions,
+            }
+          : {}),
+      };
+
       mealsByDate[dateKey][plannedMeal.meal_type] = meal;
     });
 
     return NextResponse.json({
       mealPlan,
-      meals: mealsByDate
+      meals: mealsByDate,
     });
-
   } catch (error) {
     console.error('Error in shared meal plan fetch:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 },
+    );
   }
 }

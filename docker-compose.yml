@@ -1,0 +1,40 @@
+# docker-compose.yml
+#
+# Primary use: local testing of the Docker image before pushing to Unraid.
+# Also serves as documentation for every environment variable the container needs.
+#
+# Usage:
+#   1. Copy .env.docker.example to .env.docker and fill in your values.
+#   2. docker compose --env-file .env.docker up --build
+
+services:
+  meal-planner:
+    image: ${DOCKER_IMAGE_NAME:-meal-planner}:${DOCKER_IMAGE_TAG:-latest}
+    build:
+      context: .
+      # NEXT_PUBLIC_* vars must be passed at BUILD time — they are inlined
+      # into the JavaScript bundle by the Next.js compiler.
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+        NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
+    ports:
+      - "${HOST_PORT:-3000}:3000"
+    # Runtime-only secrets — these are never baked into the image.
+    environment:
+      NODE_ENV: production
+      # Supabase (server-side admin access)
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      EDGE_SERVICE_ROLE_KEY: ${EDGE_SERVICE_ROLE_KEY}
+      # Stripe
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_PRICE_ID: ${STRIPE_PRICE_ID}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s

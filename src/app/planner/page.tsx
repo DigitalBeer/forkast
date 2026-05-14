@@ -1,16 +1,25 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { format, startOfWeek, addDays } from 'date-fns';
 import { WeeklyCalendar } from '@/components/plan/WeeklyCalendar';
 import { MealSuggestionPanel } from '@/components/plan/MealSuggestionPanel';
-import { DIETARY_TYPES, type Meal, type MealType, type DietaryType } from '@/types/meal';
+import {
+  DIETARY_TYPES,
+  type Meal,
+  type MealType,
+  type DietaryType,
+} from '@/types/meal';
 import { getFilteredMealSuggestions } from '@/lib/services/suggestionService';
 import type { MealSuggestion } from '@/lib/services/suggestionService';
 import { toast } from 'sonner';
 import { MealHistoryService } from '@/lib/data/meal-history.service';
+import {
+  createUndoSnapshot,
+  UNDO_TOAST_DURATION_MS,
+} from '@/lib/meal-plan/undo-stack';
 
 type MealPlan = {
   [date: string]: Partial<Record<MealType, Meal>>;
@@ -28,6 +37,8 @@ export default function PlannerPage() {
   });
 
   const [meals, setMeals] = useState<MealPlan>({});
+  const undoSnapshotRef = useRef<MealPlan | null>(null);
+  const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [suggestions, setSuggestions] = useState<MealSuggestion[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [hoveredSlotId, setHoveredSlotId] = useState<string | null>(null);
@@ -38,7 +49,11 @@ export default function PlannerPage() {
   const [mealTypes, setMealTypes] = useState<string[]>(['All']);
   const [mealCount, setMealCount] = useState<number>(7);
 
-  const filtersActive = dietaryTypes.length > 0 || !mealTypes.includes('All') || mealCount !== 7;
+  // User taste preferences (used as defaults when no manual filters are set)
+  const [profileDietaryPrefs, setProfileDietaryPrefs] = useState<string[]>([]);
+
+  const filtersActive =
+    dietaryTypes.length > 0 || !mealTypes.includes('All') || mealCount !== 7;
 
   // Initialize filters from URL on mount
   useEffect(() => {
@@ -51,16 +66,20 @@ export default function PlannerPage() {
     }
 
     if (dietaryParam) {
-      const types = dietaryParam.split(',').filter((t): t is DietaryType => DIETARY_TYPES.includes(t as DietaryType));
+      const types = dietaryParam
+        .split(',')
+        .filter((t): t is DietaryType =>
+          DIETARY_TYPES.includes(t as DietaryType),
+        );
       setDietaryTypes(types);
     }
 
     if (mealsParam) {
       const mapped: Array<string | null> = mealsParam
         .split(',')
-        .map((t) => t.trim())
+        .map(t => t.trim())
         .filter(Boolean)
-        .map((t) => {
+        .map(t => {
           const lower = t.toLowerCase();
           if (lower === 'all') return 'All';
           if (lower === 'breakfast') return 'Breakfast';
@@ -75,23 +94,84 @@ export default function PlannerPage() {
     }
   }, [searchParams]);
 
-  // Update URL when filters change
-  const updateURL = useCallback((dietary: DietaryType[], meals: string[], startOverride?: string) => {
-    const params = new URLSearchParams();
-    params.set('start', startOverride ?? weekStart);
-    if (dietary.length > 0) params.set('dietary', dietary.join(','));
+  // Fetch user taste preferences to use as dietary defaults
+  useEffect(() => {
+    fetch('/api/profile/preferences')
+      .then(r => (r.ok ? r.json() : null))
+      .then(data => {
+        if (data?.dietaryPreferences?.length) {
+          setProfileDietaryPrefs(data.dietaryPreferences);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
-    const mealsForUrl = meals
-      .filter((m) => m !== 'All')
-      .map((m) => m.toLowerCase());
-
-    if (mealsForUrl.length > 0 && mealsForUrl.length < 3) {
-      params.set('meals', mealsForUrl.join(','));
+  const clearUndoTimer = useCallback(() => {
+    if (undoTimerRef.current) {
+      clearTimeout(undoTimerRef.current);
+      undoTimerRef.current = null;
     }
+  }, []);
 
-    const newURL = params.toString() ? `/planner?${params.toString()}` : '/planner';
-    router.replace(newURL, { scroll: false });
-  }, [router, weekStart]);
+  const clearUndoSnapshot = useCallback(() => {
+    undoSnapshotRef.current = null;
+    clearUndoTimer();
+  }, [clearUndoTimer]);
+
+  const captureUndo = useCallback(
+    (currentMeals: MealPlan) => {
+      undoSnapshotRef.current = createUndoSnapshot(currentMeals);
+      clearUndoTimer();
+      undoTimerRef.current = setTimeout(() => {
+        undoSnapshotRef.current = null;
+        undoTimerRef.current = null;
+      }, UNDO_TOAST_DURATION_MS);
+    },
+    [clearUndoTimer],
+  );
+
+  const restoreUndo = useCallback(() => {
+    if (!undoSnapshotRef.current) return;
+
+    setMeals(undoSnapshotRef.current);
+    clearUndoSnapshot();
+    toast.success('Undone.');
+  }, [clearUndoSnapshot]);
+
+  const showUndoToast = useCallback(
+    (message: string) => {
+      toast.success(message, {
+        action: { label: 'Undo', onClick: restoreUndo },
+        duration: UNDO_TOAST_DURATION_MS,
+      });
+    },
+    [restoreUndo],
+  );
+
+  useEffect(() => clearUndoTimer, [clearUndoTimer]);
+
+  // Update URL when filters change
+  const updateURL = useCallback(
+    (dietary: DietaryType[], meals: string[], startOverride?: string) => {
+      const params = new URLSearchParams();
+      params.set('start', startOverride ?? weekStart);
+      if (dietary.length > 0) params.set('dietary', dietary.join(','));
+
+      const mealsForUrl = meals
+        .filter(m => m !== 'All')
+        .map(m => m.toLowerCase());
+
+      if (mealsForUrl.length > 0 && mealsForUrl.length < 3) {
+        params.set('meals', mealsForUrl.join(','));
+      }
+
+      const newURL = params.toString()
+        ? `/planner?${params.toString()}`
+        : '/planner';
+      router.replace(newURL, { scroll: false });
+    },
+    [router, weekStart],
+  );
 
   const handleDietaryChange = (types: DietaryType[]) => {
     setDietaryTypes(types);
@@ -134,28 +214,31 @@ export default function PlannerPage() {
       const planData = {
         startDate: weekStart,
         endDate: format(addDays(new Date(weekStart), 6), 'yyyy-MM-dd'),
-        meals: Object.entries(meals).reduce<MealPlanPayload>((acc, [date, dayMeals]) => {
-          acc[date] = {};
-          if (dayMeals.Breakfast) {
-            acc[date].breakfast = {
-              id: dayMeals.Breakfast.id,
-              name: dayMeals.Breakfast.name
-            };
-          }
-          if (dayMeals.Lunch) {
-            acc[date].lunch = {
-              id: dayMeals.Lunch.id,
-              name: dayMeals.Lunch.name
-            };
-          }
-          if (dayMeals.Dinner) {
-            acc[date].dinner = {
-              id: dayMeals.Dinner.id,
-              name: dayMeals.Dinner.name
-            };
-          }
-          return acc;
-        }, {} as MealPlanPayload)
+        meals: Object.entries(meals).reduce<MealPlanPayload>(
+          (acc, [date, dayMeals]) => {
+            acc[date] = {};
+            if (dayMeals.Breakfast) {
+              acc[date].breakfast = {
+                id: dayMeals.Breakfast.id,
+                name: dayMeals.Breakfast.name,
+              };
+            }
+            if (dayMeals.Lunch) {
+              acc[date].lunch = {
+                id: dayMeals.Lunch.id,
+                name: dayMeals.Lunch.name,
+              };
+            }
+            if (dayMeals.Dinner) {
+              acc[date].dinner = {
+                id: dayMeals.Dinner.id,
+                name: dayMeals.Dinner.name,
+              };
+            }
+            return acc;
+          },
+          {} as MealPlanPayload,
+        ),
       };
 
       const response = await fetch('/api/meal-plans', {
@@ -178,21 +261,23 @@ export default function PlannerPage() {
       Object.entries(meals).forEach(([date, dayMeals]) => {
         Object.entries(dayMeals).forEach(([mealType, meal]) => {
           if (meal) {
-            MealHistoryService.recordMealAction(
-              meal.id,
-              'planned',
-              { date, mealType }
-            ).catch(err => console.error('Failed to record meal history:', err));
+            MealHistoryService.recordMealAction(meal.id, 'planned', {
+              date,
+              mealType,
+            }).catch(err =>
+              console.error('Failed to record meal history:', err),
+            );
           }
         });
       });
 
       // Redirect to the plan view after saving
       router.push('/plan');
-
     } catch (error) {
       console.error('Error saving meal plan:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to save meal plan');
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to save meal plan',
+      );
     } finally {
       setIsSaving(false);
     }
@@ -201,14 +286,31 @@ export default function PlannerPage() {
   const handleGenerateSuggestions = async () => {
     setError(null);
     try {
-      const data = await getFilteredMealSuggestions({
-        startDate: weekStart,
-        days: 7,
-        filters: {
-          dietaryTypes: dietaryTypes.length > 0 ? dietaryTypes : undefined,
-          mealTypes: !mealTypes.includes('All') && mealTypes.length > 0 ? mealTypes.map((m) => m.toLowerCase()) : undefined,
+      // Use explicit user-set filters; fall back to saved profile preferences
+      const effectiveDietaryTypes =
+        dietaryTypes.length > 0
+          ? dietaryTypes
+          : (profileDietaryPrefs as DietaryType[]).filter(
+              (p): p is DietaryType => DIETARY_TYPES.includes(p as DietaryType),
+            );
+
+      const data = await getFilteredMealSuggestions(
+        {
+          startDate: weekStart,
+          days: 7,
+          filters: {
+            dietaryTypes:
+              effectiveDietaryTypes.length > 0
+                ? effectiveDietaryTypes
+                : undefined,
+            mealTypes:
+              !mealTypes.includes('All') && mealTypes.length > 0
+                ? mealTypes.map(m => m.toLowerCase())
+                : undefined,
+          },
         },
-      }, { skipCache: true }); // Bypass cache to see latest changes
+        { skipCache: true },
+      ); // Bypass cache to see latest changes
 
       type FlatMealSuggestion = {
         id: string;
@@ -222,11 +324,18 @@ export default function PlannerPage() {
         meal?: FlatMealSuggestion;
       };
 
-      const mappedSuggestions = (data as Array<FlatMealSuggestion | NestedMealSuggestion>).flatMap((item) => {
-        const candidate = (item as NestedMealSuggestion).meal ?? (item as FlatMealSuggestion);
+      const mappedSuggestions = (
+        data as Array<FlatMealSuggestion | NestedMealSuggestion>
+      ).flatMap(item => {
+        const candidate =
+          (item as NestedMealSuggestion).meal ?? (item as FlatMealSuggestion);
 
         if (!candidate || typeof candidate !== 'object') return [];
-        if (typeof candidate.id !== 'string' || typeof candidate.name !== 'string') return [];
+        if (
+          typeof candidate.id !== 'string' ||
+          typeof candidate.name !== 'string'
+        )
+          return [];
 
         const normalizedLastPrepared = candidate.last_prepared ?? undefined;
         const normalizedMeal = {
@@ -248,7 +357,9 @@ export default function PlannerPage() {
 
       setSuggestions(mappedSuggestions.slice(0, mealCount));
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to load suggestions');
+      setError(
+        err instanceof Error ? err.message : 'Failed to load suggestions',
+      );
     }
   };
 
@@ -256,7 +367,7 @@ export default function PlannerPage() {
   useEffect(() => {
     handleGenerateSuggestions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dietaryTypes, mealTypes, mealCount, weekStart]);
+  }, [dietaryTypes, mealTypes, mealCount, weekStart, profileDietaryPrefs]);
 
   const handleMealDrop = (date: string, mealType: MealType, meal: Meal) => {
     setMeals(prev => ({
@@ -308,13 +419,28 @@ export default function PlannerPage() {
     sourceDate: string,
     sourceMealType: MealType,
     targetDate: string,
-    targetMealType: MealType
+    targetMealType: MealType,
   ) => {
+    // Capture undo BEFORE state update (avoid side effects inside setState updater)
+    captureUndo(meals);
+
     setMeals(prev => {
       const sourceMeal = prev[sourceDate]?.[sourceMealType];
       const targetMeal = prev[targetDate]?.[targetMealType];
 
       if (!sourceMeal || !targetMeal) return prev;
+
+      if (sourceDate === targetDate) {
+        // Same day – merge both slot changes into a single key to avoid overwrite
+        return {
+          ...prev,
+          [sourceDate]: {
+            ...prev[sourceDate],
+            [sourceMealType]: targetMeal,
+            [targetMealType]: sourceMeal,
+          },
+        };
+      }
 
       return {
         ...prev,
@@ -328,16 +454,59 @@ export default function PlannerPage() {
         },
       };
     });
+
+    showUndoToast('Swap done.');
+  };
+
+  const handleMealReplace = (
+    sourceDate: string,
+    sourceMealType: MealType,
+    targetDate: string,
+    targetMealType: MealType,
+    meal: Meal,
+  ) => {
+    // Capture undo BEFORE state update (avoid side effects inside setState updater)
+    captureUndo(meals);
+
+    setMeals(prev => {
+      const sourceMeal = prev[sourceDate]?.[sourceMealType];
+      const targetMeal = prev[targetDate]?.[targetMealType];
+
+      if (!sourceMeal || !targetMeal) return prev;
+
+      const updated: MealPlan = {
+        ...prev,
+        [targetDate]: {
+          ...prev[targetDate],
+          [targetMealType]: meal,
+        },
+      };
+
+      if (sourceDate !== targetDate || sourceMealType !== targetMealType) {
+        const sourceDayMeals = { ...updated[sourceDate] };
+        delete sourceDayMeals[sourceMealType];
+
+        if (Object.keys(sourceDayMeals).length === 0) {
+          delete updated[sourceDate];
+        } else {
+          updated[sourceDate] = sourceDayMeals;
+        }
+      }
+
+      return updated;
+    });
+
+    showUndoToast('Replace done.');
   };
 
   const handleCooked = async (date: string, mealType: MealType, meal: Meal) => {
     // Record the 'cooked' action in meal history
     try {
-      await MealHistoryService.recordMealAction(
-        meal.id,
-        'cooked',
-        { date, mealType, source: 'meal-plan' }
-      );
+      await MealHistoryService.recordMealAction(meal.id, 'cooked', {
+        date,
+        mealType,
+        source: 'meal-plan',
+      });
 
       toast.success(`Marked "${meal.name}" as cooked`);
     } catch (error) {
@@ -348,11 +517,11 @@ export default function PlannerPage() {
   const handleSkip = async (date: string, mealType: MealType, meal: Meal) => {
     // Record the 'skip' action in meal history
     try {
-      await MealHistoryService.recordMealAction(
-        meal.id,
-        'skipped',
-        { date, mealType, source: 'meal-plan' }
-      );
+      await MealHistoryService.recordMealAction(meal.id, 'skipped', {
+        date,
+        mealType,
+        source: 'meal-plan',
+      });
 
       // Remove the meal from the plan since it was skipped
       handleRemove(date, mealType);
@@ -380,7 +549,9 @@ export default function PlannerPage() {
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Plan Your Meals</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+            Plan Your Meals
+          </h1>
         </div>
 
         {/* Horizontal Filter Bar */}
@@ -388,11 +559,13 @@ export default function PlannerPage() {
           <div className="flex flex-col lg:flex-row lg:items-end gap-4">
             {/* Week Start */}
             <div className="w-full lg:w-56">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Week starting</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Week starting
+              </label>
               <input
                 type="date"
                 value={weekStart}
-                onChange={(e) => handleWeekStartChange(e.target.value)}
+                onChange={e => handleWeekStartChange(e.target.value)}
                 className="w-full px-3 py-1 text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                 data-testid="plan-week-start"
               />
@@ -400,9 +573,11 @@ export default function PlannerPage() {
 
             {/* Meal Type Filters */}
             <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Meal Types</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Meal Types
+              </label>
               <div className="flex flex-wrap gap-2">
-                {['All', 'Breakfast', 'Lunch', 'Dinner'].map((type) => (
+                {['All', 'Breakfast', 'Lunch', 'Dinner'].map(type => (
                   <button
                     key={type}
                     onClick={() => {
@@ -415,13 +590,16 @@ export default function PlannerPage() {
                           : mealTypes.includes('All')
                             ? [type]
                             : [...mealTypes.filter(t => t !== 'All'), type];
-                        handleMealTypesChange(updated.length > 0 ? updated : ['All']);
+                        handleMealTypesChange(
+                          updated.length > 0 ? updated : ['All'],
+                        );
                       }
                     }}
-                    className={`px-3 py-1 text-sm rounded-md transition-colors ${mealTypes.includes(type)
-                      ? 'bg-blue-100 text-blue-700 border border-blue-300'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
+                    className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                      mealTypes.includes(type)
+                        ? 'bg-blue-100 text-blue-700 border border-blue-300'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
                   >
                     {type}
                   </button>
@@ -431,9 +609,11 @@ export default function PlannerPage() {
 
             {/* Dietary Filters */}
             <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Dietary Preferences</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Dietary Preferences
+              </label>
               <div className="flex flex-wrap gap-2">
-                {DIETARY_TYPES.map((diet) => {
+                {DIETARY_TYPES.map(diet => {
                   const isSelected = dietaryTypes.includes(diet);
                   return (
                     <button
@@ -444,10 +624,11 @@ export default function PlannerPage() {
                           : [...dietaryTypes, diet];
                         handleDietaryChange(updated);
                       }}
-                      className={`px-3 py-1 text-sm rounded-md transition-colors ${dietaryTypes.includes(diet)
-                        ? 'bg-emerald-100 text-emerald-700 border border-emerald-300'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
+                      className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                        dietaryTypes.includes(diet)
+                          ? 'bg-emerald-100 text-emerald-700 border border-emerald-300'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
                     >
                       {diet}
                     </button>
@@ -458,14 +639,19 @@ export default function PlannerPage() {
 
             {/* Meal Count Selector */}
             <div className="w-32">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Meal Count</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Meal Count
+              </label>
               <input
                 type="number"
                 min="1"
                 max="14"
                 value={mealCount}
-                onChange={(e) => {
-                  const value = Math.min(14, Math.max(1, parseInt(e.target.value) || 1));
+                onChange={e => {
+                  const value = Math.min(
+                    14,
+                    Math.max(1, parseInt(e.target.value) || 1),
+                  );
                   setMealCount(value);
                 }}
                 className="w-full px-3 py-1 text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
@@ -495,6 +681,7 @@ export default function PlannerPage() {
               meals={meals}
               onMealDrop={handleMealDrop}
               onMealSwap={handleMealSwap}
+              onMealReplace={handleMealReplace}
               onRemove={handleRemove}
               onDuplicate={handleDuplicate}
               onCooked={handleCooked}
@@ -506,9 +693,7 @@ export default function PlannerPage() {
 
           {/* Suggestions Panel - Takes 1 column */}
           <div className="lg:col-span-1">
-            <MealSuggestionPanel
-              suggestions={suggestions}
-            />
+            <MealSuggestionPanel suggestions={suggestions} />
           </div>
         </div>
 

@@ -41,9 +41,9 @@ export function NavBar() {
   };
   
   return (
-    <nav className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b print:hidden">
+    <nav className="sticky top-0 z-30 bg-cookbook-cream/95 backdrop-blur border-b border-border print:hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
-        <Link href="/" className="font-semibold text-gray-900">BMAD Meal Planner</Link>
+        <Link href="/" className="font-serif font-bold text-cookbook-terracotta text-lg">Forkast</Link>
         <div className="flex items-center gap-2 overflow-x-auto">
           {links.map((l) => {
             const active = isActive(l.href);
@@ -54,8 +54,8 @@ export function NavBar() {
                 className={
                   "px-3 py-1 rounded-md text-sm whitespace-nowrap transition-colors " +
                   (active
-                    ? "bg-blue-100 text-blue-700"
-                    : "text-gray-700 hover:bg-gray-100")
+                    ? "bg-cookbook-terracotta/10 text-cookbook-terracotta font-medium"
+                    : "text-foreground hover:bg-muted")
                 }
               >
                 {l.label}
@@ -68,11 +68,11 @@ export function NavBar() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
-                  className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                  className="p-2 rounded-full hover:bg-muted transition-colors"
                   aria-label="Profile menu"
                   data-testid="profile-menu-button"
                 >
-                  <User className="w-5 h-5 text-gray-700" />
+                  <User className="w-5 h-5 text-foreground" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -104,7 +104,7 @@ export function NavBar() {
           ) : (
             <Link
               href="/login"
-              className="flex items-center gap-1 px-3 py-1 rounded-md text-sm whitespace-nowrap transition-colors text-gray-700 hover:bg-gray-100"
+              className="flex items-center gap-1 px-3 py-1 rounded-md text-sm whitespace-nowrap transition-colors text-foreground hover:bg-muted"
               data-testid="login-link"
             >
               <LogIn className="w-4 h-4" />

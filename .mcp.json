@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "switchboard": {
+      "command": "node",
+      "args": [
+        "c:\\My Work\\Projects\\BMAD - Meal Planner\\.switchboard\\MCP\\mcp-server.js"
+      ],
+      "env": {
+        "SWITCHBOARD_WORKSPACE_ROOT": "c:/My Work/Projects/BMAD - Meal Planner"
+      }
+    }
+  }
+}

@@ -1,7 +1,7 @@
 import SignUpForm from "@/components/auth/SignUpForm";
 
 export const metadata = {
-  title: "Sign Up | BMAD Meal Planner",
+  title: "Sign Up | Forkast",
 };
 
 export default function SignUpPage() {

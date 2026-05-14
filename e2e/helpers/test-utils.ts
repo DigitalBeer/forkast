@@ -1,7 +1,7 @@
 import { Page, expect } from '@playwright/test';
 
 /**
- * Reusable Test Utilities for BMAD Meal Planner E2E Tests
+ * Reusable Test Utilities for Forkast E2E Tests
  * 
  * This module provides common helper functions to reduce code duplication
  * and improve test maintainability.
@@ -159,9 +159,9 @@ export async function takeTimestampedScreenshot(
  * Mock an API route with custom response
  */
 export async function mockApiRoute(
-  page: Page, 
-  endpoint: string, 
-  response: any, 
+  page: Page,
+  endpoint: string,
+  response: Record<string, unknown>,
   status = 200
 ): Promise<void> {
   await page.route(`**/${endpoint}`, route => {

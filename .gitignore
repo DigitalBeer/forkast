@@ -23,6 +23,8 @@
 # misc
 .DS_Store
 *.pem
+claude.md
+.vibeyardignore
 
 # debug
 npm-debug.log*
@@ -45,6 +47,9 @@ build/
 dist/
 out/
 target/
+
+# e2e auth state (Playwright sessions — never commit)
+e2e/.auth/
 
 # Temporary files
 *.tmp
@@ -77,6 +82,8 @@ docs/
 !docs/stories/
 !docs/architecture/
 web-bundles/
+.agent/
+_bmad/
 
 # Generated reports
 eslint-report.*

@@ -1,8 +1,9 @@
-import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { type MealSuggestion } from '@/lib/services/suggestionService';
 import { formatDistanceToNow } from 'date-fns';
+import { MealTypeIcon } from '@/components/ui/MealTypeIcon';
+import { MealImage } from '@/components/meals/MealImage';
 
 interface MealSuggestionCardProps {
   meal: MealSuggestion;
@@ -10,16 +11,6 @@ interface MealSuggestionCardProps {
 }
 
 export function MealSuggestionCard({ meal, dietaryPreferences = [] }: MealSuggestionCardProps) {
-  // Create a simple placeholder image using data URI
-  const placeholderImage = 'data:image/svg+xml;base64,' + btoa(`
-    <svg width="400" height="200" xmlns="http://www.w3.org/2000/svg">
-      <rect width="100%" height="100%" fill="#f3f4f6"/>
-      <text x="50%" y="50%" font-family="Arial, sans-serif" font-size="16" fill="#9ca3af" text-anchor="middle" dy=".3em">
-        ${meal.name}
-      </text>
-    </svg>
-  `);
-
   // Determine which dietary preferences this meal satisfies
   const mealDietaryTags = dietaryPreferences.filter(pref => {
     // Simple logic - in a real app, this would come from meal data
@@ -40,22 +31,25 @@ export function MealSuggestionCard({ meal, dietaryPreferences = [] }: MealSugges
     <Card>
       <CardHeader>
         <div className="flex justify-between items-start gap-2">
-          <CardTitle className="flex-1">{meal.name}</CardTitle>
+          <div className="flex items-center gap-2 flex-1">
+            {meal.meal_type && <MealTypeIcon type={meal.meal_type} size="md" />}
+            <CardTitle className="flex-1">{meal.name}</CardTitle>
+          </div>
           {!meal.last_prepared && (
             <Badge variant="secondary" className="text-xs">New!</Badge>
           )}
         </div>
       </CardHeader>
       <CardContent>
-        <div className="relative w-full h-48 rounded-md overflow-hidden">
-          <Image
-            src={meal.image_url || placeholderImage}
-            alt={meal.name}
-            fill
-            className="object-cover"
-          />
-        </div>
-        <div className="text-xs text-gray-600 mt-2">
+        <MealImage
+          src={meal.image_url}
+          alt={meal.name}
+          size="full"
+          mealName={meal.name}
+          mealType={meal.meal_type}
+          className="!h-48 rounded-md"
+        />
+        <div className="text-xs text-muted-foreground mt-2">
           {meal.last_prepared
             ? `Last prepared ${formatDistanceToNow(new Date(meal.last_prepared), { addSuffix: true })}`
             : 'Never prepared'}

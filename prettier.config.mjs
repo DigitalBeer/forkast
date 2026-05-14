@@ -1,4 +1,4 @@
-// Prettier configuration for BMAD Meal Planner
+// Prettier configuration for Forkast
 // See https://prettier.io/docs/en/options.html for all available options.
 
 /** @type {import("prettier").Options} */

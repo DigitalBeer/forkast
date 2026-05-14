@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { type Meal } from "@/types/meal";
 import {
@@ -13,6 +12,8 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2, Plus, Copy } from "lucide-react";
+import { MealTypeIcon } from "@/components/ui/MealTypeIcon";
+import { MealImage } from "@/components/meals/MealImage";
 
 interface MealCardProps {
   meal: Meal;
@@ -26,16 +27,14 @@ interface MealCardProps {
 export function MealCard({ meal, className, onEdit, onDelete, onAddToPlan, onDuplicate }: MealCardProps) {
   return (
     <Card data-testid="meal-card" className={cn("relative group", className)}>
-      {meal.image_url && (
-        <div className="relative h-40 w-full overflow-hidden rounded-t-md">
-          <Image
-            src={meal.image_url}
-            alt={meal.name}
-            fill
-            className="object-cover transition-transform group-hover:scale-105"
-          />
-        </div>
-      )}
+      <MealImage
+        src={meal.image_url}
+        alt={meal.name}
+        size="card"
+        mealName={meal.name}
+        mealType={meal.meal_type}
+        className="rounded-t-md rounded-b-none"
+      />
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center justify-between gap-2 text-base font-semibold">
           <span>{meal.name}</span>
@@ -49,8 +48,9 @@ export function MealCard({ meal, className, onEdit, onDelete, onAddToPlan, onDup
             </Button>
         </CardTitle>
         {meal.meal_type && (
-          <div className="text-xs font-medium text-primary mt-1">
-            {meal.meal_type}
+          <div className="flex items-center gap-1.5 text-xs font-medium mt-1">
+            <MealTypeIcon type={meal.meal_type} size="sm" />
+            <span className="text-cookbook-warm-gray">{meal.meal_type}</span>
           </div>
         )}
         {meal.tags?.length ? (

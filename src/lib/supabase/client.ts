@@ -17,7 +17,7 @@ export function createClient() {
 
             const name = trimmed.slice(0, eqIndex).trim()
             const rawValue = trimmed.slice(eqIndex + 1)
-            const value = rawValue ? decodeURIComponent(rawValue) : ''
+            const value = rawValue ?? ''
 
             if (name) {
               acc.push({ name, value })
@@ -28,7 +28,7 @@ export function createClient() {
         setAll(cookies) {
           if (typeof window === 'undefined') return
           cookies.forEach(({ name, value, options }) => {
-            let cookieString = `${name}=${encodeURIComponent(value)}`
+            let cookieString = `${name}=${value}`
             if (options?.maxAge) {
               cookieString += `; max-age=${options.maxAge}`
             }

@@ -144,5 +144,70 @@ describe('MealHistoryService', () => {
       expect(mockQueryBuilder.order).toHaveBeenCalledWith('action_date', { ascending: false });
       expect(mockQueryBuilder.limit).toHaveBeenCalledWith(10);
     });
+
+    it('should return empty array on error', async () => {
+      mockQueryBuilder.then = (resolve: any) =>
+        resolve({ data: null, error: { message: 'DB error' } });
+
+      const result = await MealHistoryService.getMealHistory('123');
+
+      expect(result).toEqual([]);
+    });
+
+    it('should return empty array when data is null', async () => {
+      mockQueryBuilder.then = (resolve: any) =>
+        resolve({ data: null, error: null });
+
+      const result = await MealHistoryService.getMealHistory('123');
+
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('getUserMealHistoryWithLoading', () => {
+    it('should track loading state', async () => {
+      mockQueryBuilder.then = (resolve: any) =>
+        resolve({ data: [], error: null, count: 0 });
+
+      const operation = MealHistoryService.getUserMealHistoryWithLoading();
+      expect(operation.loadingState).toBe('idle');
+
+      const result = await operation.execute();
+      expect(operation.loadingState).toBe('success');
+      expect(result.data).toEqual([]);
+    });
+  });
+
+  describe('error handling', () => {
+    it('should handle foreign key violation in recordMealAction', async () => {
+      mockRpc.mockResolvedValueOnce({ error: { code: '23503', message: 'foreign key violation' } });
+
+      await expect(MealHistoryService.recordMealAction('999', 'cooked'))
+        .rejects
+        .toThrow('Meal with ID 999 does not exist');
+    });
+
+    it('should handle database error in getUserMealHistory', async () => {
+      mockQueryBuilder.then = (resolve: any) =>
+        resolve({ data: null, error: { message: 'DB error' }, count: null });
+
+      await expect(MealHistoryService.getUserMealHistory())
+        .rejects
+        .toThrow('Failed to fetch meal history: DB error');
+    });
+  });
+
+  describe('operation reset', () => {
+    it('should reset loading state and error', async () => {
+      const operation = MealHistoryService.recordMealActionWithLoading('', 'viewed');
+
+      await expect(operation.execute()).rejects.toThrow();
+      expect(operation.loadingState).toBe('error');
+      expect(operation.error).not.toBeNull();
+
+      operation.reset();
+      expect(operation.loadingState).toBe('idle');
+      expect(operation.error).toBeNull();
+    });
   });
 });

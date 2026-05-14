@@ -4,11 +4,21 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format, parseISO, startOfWeek, addWeeks } from 'date-fns';
 import Link from 'next/link';
-import { Calendar, Clock, TrendingUp, Utensils, Newspaper, Share2 } from 'lucide-react';
+import {
+  Calendar,
+  Clock,
+  TrendingUp,
+  Utensils,
+  Newspaper,
+  Share2,
+} from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { ShareModal } from '@/components/plan/ShareModal';
 import { RecommendedMealsCard } from '@/components/recommendations/RecommendedMealsCard';
+import { LandingPage } from '@/components/landing/LandingPage';
+import { MealImage } from '@/components/meals/MealImage';
+import { useAuthStore } from '@/store/auth';
 import type { MealPlanData, MealPlanMeal } from '@/types/meal';
 
 interface MealPlanSummary {
@@ -21,8 +31,35 @@ interface MealPlanSummary {
 const MINUTES_PER_MEAL_PLANNING = 15;
 
 export default function DashboardPage() {
+  const { user, loading: authLoading } = useAuthStore();
+
+  // Show landing page for unauthenticated users
+  if (!authLoading && !user) {
+    return <LandingPage />;
+  }
+
+  // Show loading while auth state is initializing
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  // Authenticated dashboard - extracted to keep hook count stable
+  return <AuthenticatedDashboard />;
+}
+
+function AuthenticatedDashboard() {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-  const { data: mealPlan, isLoading: planLoading, error: planError, refetch } = useQuery<MealPlanData | null>({
+
+  const {
+    data: mealPlan,
+    isLoading: planLoading,
+    error: planError,
+    refetch,
+  } = useQuery<MealPlanData | null>({
     queryKey: ['latest-meal-plan'],
     queryFn: async () => {
       const response = await fetch('/api/meal-plans');
@@ -54,14 +91,16 @@ export default function DashboardPage() {
       const response = await fetch('/api/meals?limit=10');
       if (!response.ok) return [];
       const data = await response.json();
-      return (data.meals || []).filter((m: MealPlanMeal) => m.image_url || m.thumbnail);
+      return (data.meals || []).filter(
+        (m: MealPlanMeal) => m.image_url || m.thumbnail,
+      );
     },
     staleTime: 5 * 60 * 1000,
   });
 
   if (planLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <LoadingSpinner />
       </div>
     );
@@ -69,9 +108,13 @@ export default function DashboardPage() {
 
   if (planError) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <ErrorMessage
-          message={planError instanceof Error ? planError.message : 'Failed to load dashboard'}
+          message={
+            planError instanceof Error
+              ? planError.message
+              : 'Failed to load dashboard'
+          }
           onRetry={() => refetch()}
         />
       </div>
@@ -79,9 +122,10 @@ export default function DashboardPage() {
   }
 
   // Calculate stats
-  const totalMealsPlanned = upcomingPlans?.reduce((sum, p) => sum + (p.mealCount || 0), 0) || 0;
+  const totalMealsPlanned =
+    upcomingPlans?.reduce((sum, p) => sum + (p.mealCount || 0), 0) || 0;
   const timeSavedMinutes = totalMealsPlanned * MINUTES_PER_MEAL_PLANNING;
-  const timeSavedHours = Math.round(timeSavedMinutes / 60 * 10) / 10;
+  const timeSavedHours = Math.round((timeSavedMinutes / 60) * 10) / 10;
 
   // Get next 4 weeks
   const today = new Date();
@@ -93,26 +137,31 @@ export default function DashboardPage() {
       start: format(weekStart, 'yyyy-MM-dd'),
       end: format(weekEnd, 'yyyy-MM-dd'),
       label: format(weekStart, 'MMM d') + ' - ' + format(weekEnd, 'MMM d'),
-      hasPlans: upcomingPlans?.some(p => p.startDate === format(weekStart, 'yyyy-MM-dd')) || false,
+      hasPlans:
+        upcomingPlans?.some(
+          p => p.startDate === format(weekStart, 'yyyy-MM-dd'),
+        ) || false,
     };
   });
 
   // Empty state
   if (!mealPlan) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-background">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-8">Dashboard</h1>
+          <h1 className="text-3xl font-serif font-bold text-foreground mb-8">
+            Dashboard
+          </h1>
 
           <div className="flex items-center justify-center py-16">
             <div className="text-center">
-              <Utensils className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <p className="text-xl text-gray-600 mb-6">
+              <Utensils className="w-16 h-16 text-cookbook-warm-gray/40 mx-auto mb-4" />
+              <p className="text-xl text-muted-foreground mb-6">
                 Aww, you have no plans, why not make one?
               </p>
               <Link
                 href="/planner"
-                className="px-4 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors"
+                className="px-4 py-2 bg-primary text-primary-foreground font-medium rounded-md hover:bg-primary/90 transition-colors"
               >
                 Plan New Week
               </Link>
@@ -125,9 +174,10 @@ export default function DashboardPage() {
 
   // Calculate current plan stats
   const sortedDates = Object.keys(mealPlan.meals).sort();
-  const weekRange = sortedDates.length > 0
-    ? `${format(parseISO(sortedDates[0]), 'MMM d')} - ${format(parseISO(sortedDates[sortedDates.length - 1]), 'MMM d, yyyy')}`
-    : '';
+  const weekRange =
+    sortedDates.length > 0
+      ? `${format(parseISO(sortedDates[0]), 'MMM d')} - ${format(parseISO(sortedDates[sortedDates.length - 1]), 'MMM d, yyyy')}`
+      : '';
 
   let currentPlanMealCount = 0;
   sortedDates.forEach(date => {
@@ -147,13 +197,15 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+          <h1 className="text-3xl font-serif font-bold text-foreground">
+            Dashboard
+          </h1>
           <Link
             href="/planner"
-            className="px-4 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors"
+            className="px-4 py-2 bg-primary text-primary-foreground font-medium rounded-md hover:bg-primary/90 transition-colors"
           >
             Plan New Week
           </Link>
@@ -161,30 +213,31 @@ export default function DashboardPage() {
 
         {/* Widget Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-
           {/* Active Plan Card */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 lg:col-span-2">
+          <div className="bg-card rounded-xl shadow-sm border border-border p-6 lg:col-span-2">
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Calendar className="w-5 h-5 text-blue-600" />
+                <div className="p-2 bg-cookbook-terracotta/10 rounded-lg">
+                  <Calendar className="w-5 h-5 text-cookbook-terracotta" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-900">Current Plan</h2>
-                  <p className="text-sm text-gray-500">{weekRange}</p>
+                  <h2 className="text-lg font-serif font-semibold text-foreground">
+                    Current Plan
+                  </h2>
+                  <p className="text-sm text-muted-foreground">{weekRange}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setIsShareModalOpen(true)}
-                  className="flex items-center gap-1 text-sm text-gray-600 hover:text-gray-700 font-medium"
+                  className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground font-medium"
                 >
                   <Share2 className="w-4 h-4" />
                   Share
                 </button>
                 <Link
                   href="/plan"
-                  className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                  className="text-sm text-cookbook-terracotta hover:text-cookbook-terracotta/80 font-medium"
                 >
                   View Full Plan →
                 </Link>
@@ -192,68 +245,86 @@ export default function DashboardPage() {
             </div>
 
             <div className="flex items-center gap-4 mb-4">
-              <span className="text-3xl font-bold text-gray-900">{currentPlanMealCount}</span>
-              <span className="text-gray-500">meals planned</span>
+              <span className="text-3xl font-bold text-foreground">
+                {currentPlanMealCount}
+              </span>
+              <span className="text-muted-foreground">meals planned</span>
             </div>
 
             {sampleMeals.length > 0 && (
-              <p className="text-sm text-gray-600">
-                <span className="font-medium">Preview:</span> {sampleMeals.join(', ')}
+              <p className="text-sm text-muted-foreground">
+                <span className="font-medium">Preview:</span>{' '}
+                {sampleMeals.join(', ')}
               </p>
             )}
           </div>
 
           {/* Stats Card */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="bg-card rounded-xl shadow-sm border border-border p-6">
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <Clock className="w-5 h-5 text-green-600" />
+              <div className="p-2 bg-cookbook-sage/10 rounded-lg">
+                <Clock className="w-5 h-5 text-cookbook-sage" />
               </div>
-              <h2 className="text-lg font-semibold text-gray-900">Time Saved</h2>
+              <h2 className="text-lg font-serif font-semibold text-foreground">
+                Time Saved
+              </h2>
             </div>
 
             <div className="flex items-baseline gap-2 mb-2">
-              <span className="text-3xl font-bold text-green-600">{timeSavedHours}</span>
-              <span className="text-gray-500">hours</span>
+              <span className="text-3xl font-bold text-cookbook-sage">
+                {timeSavedHours}
+              </span>
+              <span className="text-muted-foreground">hours</span>
             </div>
 
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted-foreground">
               Based on {totalMealsPlanned} meals planned
             </p>
-            <p className="text-xs text-gray-400 mt-1">
+            <p className="text-xs text-muted-foreground/70 mt-1">
               (~{MINUTES_PER_MEAL_PLANNING} min saved per meal)
             </p>
           </div>
 
           {/* Next 4 Weeks Card */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 lg:col-span-2">
+          <div className="bg-card rounded-xl shadow-sm border border-border p-6 lg:col-span-2">
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <TrendingUp className="w-5 h-5 text-purple-600" />
+              <div className="p-2 bg-meal-dinner/10 rounded-lg">
+                <TrendingUp className="w-5 h-5 text-meal-dinner" />
               </div>
-              <h2 className="text-lg font-semibold text-gray-900">Upcoming Weeks</h2>
+              <h2 className="text-lg font-serif font-semibold text-foreground">
+                Upcoming Weeks
+              </h2>
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {next4Weeks.map((week, i) => (
                 <div
                   key={week.start}
-                  className={`p-3 rounded-lg border ${week.hasPlans
-                      ? 'bg-green-50 border-green-200'
-                      : 'bg-gray-50 border-gray-200'
-                    }`}
+                  className={`p-3 rounded-lg border ${
+                    week.hasPlans
+                      ? 'bg-cookbook-sage/5 border-cookbook-sage/30'
+                      : 'bg-muted/50 border-border'
+                  }`}
                 >
-                  <p className="text-xs text-gray-500 mb-1">
-                    {i === 0 ? 'This Week' : i === 1 ? 'Next Week' : `Week ${i + 1}`}
+                  <p className="text-xs text-muted-foreground mb-1">
+                    {i === 0
+                      ? 'This Week'
+                      : i === 1
+                        ? 'Next Week'
+                        : `Week ${i + 1}`}
                   </p>
-                  <p className="text-sm font-medium text-gray-900">{week.label}</p>
-                  <p className={`text-xs mt-1 ${week.hasPlans ? 'text-green-600' : 'text-gray-400'}`}>
+                  <p className="text-sm font-medium text-foreground">
+                    {week.label}
+                  </p>
+                  <p
+                    className={`text-xs mt-1 ${week.hasPlans ? 'text-cookbook-sage' : 'text-muted-foreground/60'}`}
+                  >
                     {week.hasPlans ? '✓ Planned' : 'No plan'}
                   </p>
                   {!week.hasPlans && (
                     <Link
                       href={`/planner?start=${week.start}`}
-                      className="text-xs text-blue-600 hover:underline mt-1 inline-block"
+                      className="text-xs text-cookbook-terracotta hover:underline mt-1 inline-block"
                     >
                       Plan now
                     </Link>
@@ -265,24 +336,28 @@ export default function DashboardPage() {
 
           {/* Meal Photos Carousel */}
           {userMeals && userMeals.length > 0 && (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 lg:col-span-3">
+            <div className="bg-card rounded-xl shadow-sm border border-border p-6 lg:col-span-3">
               <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-orange-100 rounded-lg">
-                  <Utensils className="w-5 h-5 text-orange-600" />
+                <div className="p-2 bg-meal-breakfast/10 rounded-lg">
+                  <Utensils className="w-5 h-5 text-meal-breakfast" />
                 </div>
-                <h2 className="text-lg font-semibold text-gray-900">Your Meals</h2>
+                <h2 className="text-lg font-serif font-semibold text-foreground">
+                  Your Meals
+                </h2>
               </div>
 
               <div className="flex gap-4 overflow-x-auto pb-2">
-                {userMeals.slice(0, 8).map((meal) => (
+                {userMeals.slice(0, 8).map(meal => (
                   <div key={meal.id} className="flex-shrink-0 w-32">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
+                    <MealImage
                       src={meal.image_url || meal.thumbnail}
                       alt={meal.name}
-                      className="w-32 h-24 object-cover rounded-lg"
+                      size="thumbnail"
+                      mealName={meal.name}
                     />
-                    <p className="text-xs text-gray-600 mt-1 truncate">{meal.name}</p>
+                    <p className="text-xs text-muted-foreground mt-1 truncate">
+                      {meal.name}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -293,23 +368,25 @@ export default function DashboardPage() {
           <RecommendedMealsCard />
 
           {/* Placeholder: News & Tips */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="bg-card rounded-xl shadow-sm border border-border p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-indigo-100 rounded-lg">
-                  <Newspaper className="w-5 h-5 text-indigo-600" />
+                <div className="p-2 bg-cookbook-warm-gray/10 rounded-lg">
+                  <Newspaper className="w-5 h-5 text-cookbook-warm-gray" />
                 </div>
-                <h2 className="text-lg font-semibold text-gray-900">Tips & News</h2>
+                <h2 className="text-lg font-serif font-semibold text-foreground">
+                  Tips & News
+                </h2>
               </div>
-              <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full font-medium">
+              <span className="text-xs bg-cookbook-warm-gray/10 text-cookbook-warm-gray px-2 py-1 rounded-full font-medium">
                 Coming Soon
               </span>
             </div>
-            <p className="text-sm text-gray-500">
-              Cooking tips, seasonal recipes, and updates from the BMAD community.
+            <p className="text-sm text-muted-foreground">
+              Cooking tips, seasonal recipes, and updates from the BMAD
+              community.
             </p>
           </div>
-
         </div>
 
         {/* Share Modal */}
@@ -324,4 +401,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-

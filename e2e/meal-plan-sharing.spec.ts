@@ -240,7 +240,7 @@ test.describe('Meal Plan Sharing', () => {
       // Verify shared page loads without authentication
       await expect(incognitoPage.locator('text=Shared Meal Plan')).toBeVisible({ timeout: 15000 });
       await expect(incognitoPage.locator('text=meals planned')).toBeVisible();
-      await expect(incognitoPage.locator('text=BMAD Meal Planner').first()).toBeVisible();
+      await expect(incognitoPage.locator('text=Forkast').first()).toBeVisible();
       
       // Verify at least one meal card is rendered (meal names come from seed data)
       await expect(incognitoPage.locator('h4').first()).toBeVisible();

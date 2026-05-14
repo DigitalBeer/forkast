@@ -5,6 +5,8 @@ import { useQuery } from '@tanstack/react-query';
 import { format, parseISO } from 'date-fns';
 import Link from 'next/link';
 import { Share2 } from 'lucide-react';
+import { MealTypeIcon } from '@/components/ui/MealTypeIcon';
+import { MealImage } from '@/components/meals/MealImage';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { PrintableMealPlan } from '@/components/meal-plans/PrintableMealPlan';
@@ -31,7 +33,7 @@ export default function PlanViewPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <LoadingSpinner />
       </div>
     );
@@ -39,7 +41,7 @@ export default function PlanViewPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <ErrorMessage 
           message={error instanceof Error ? error.message : 'Failed to load meal plan'} 
           onRetry={() => refetch()}
@@ -50,14 +52,14 @@ export default function PlanViewPage() {
 
   if (!mealPlan) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <p className="text-xl text-gray-600 mb-6">
+          <p className="text-xl text-muted-foreground mb-6">
             You don&apos;t have an active meal plan yet.
           </p>
           <Link
             href="/planner"
-            className="px-4 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors"
+            className="px-4 py-2 bg-primary text-primary-foreground font-medium rounded-md hover:bg-primary/90 transition-colors"
           >
             Create a Meal Plan
           </Link>
@@ -80,18 +82,18 @@ export default function PlanViewPage() {
 
   return (
     <>
-      <div className="min-h-screen bg-gray-50 print:hidden">
+      <div className="min-h-screen bg-background print:hidden">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex justify-between items-center mb-8">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Your Meal Plan</h1>
-              <p className="text-gray-600 mt-1">{weekRange}</p>
+              <h1 className="text-3xl font-serif font-bold text-foreground">Your Meal Plan</h1>
+              <p className="text-muted-foreground mt-1">{weekRange}</p>
             </div>
             <div className="flex items-center gap-3">
               <button
                 type="button"
                 onClick={() => setIsShareModalOpen(true)}
-                className="flex items-center gap-1 px-4 py-2 bg-white text-gray-800 font-medium rounded-md border border-gray-200 hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-1 px-4 py-2 bg-card text-foreground font-medium rounded-md border border-border hover:bg-muted transition-colors"
               >
                 <Share2 className="w-4 h-4" />
                 Share
@@ -100,20 +102,20 @@ export default function PlanViewPage() {
                 type="button"
                 onClick={handlePrint}
                 disabled={!canPrint}
-                className="px-4 py-2 bg-white text-gray-800 font-medium rounded-md border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-4 py-2 bg-card text-foreground font-medium rounded-md border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 data-testid="print-meal-plan"
               >
                 Print
               </button>
               <Link
                 href="/meal-plans/history"
-                className="px-4 py-2 bg-white text-gray-800 font-medium rounded-md border border-gray-200 hover:bg-gray-50 transition-colors"
+                className="px-4 py-2 bg-card text-foreground font-medium rounded-md border border-border hover:bg-muted transition-colors"
               >
                 View History
               </Link>
               <Link
                 href="/planner"
-                className="px-4 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors"
+                className="px-4 py-2 bg-primary text-primary-foreground font-medium rounded-md hover:bg-primary/90 transition-colors"
               >
                 Plan New Week
               </Link>
@@ -128,8 +130,8 @@ export default function PlanViewPage() {
               if (!hasMeals) return null;
 
               return (
-                <div key={date} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                <div key={date} className="bg-card rounded-xl shadow-sm border border-border p-6">
+                  <h2 className="text-xl font-serif font-semibold text-foreground mb-4">
                     {format(parseISO(date), 'EEEE, MMMM d')}
                   </h2>
                   
@@ -151,14 +153,14 @@ export default function PlanViewPage() {
 
           {sortedDates.length === 0 && (
             <div className="text-center py-12">
-              <p className="text-gray-500">No meals planned for this week.</p>
+              <p className="text-muted-foreground">No meals planned for this week.</p>
             </div>
           )}
 
           <div className="mt-8 text-center">
             <Link
               href="/"
-              className="text-blue-600 hover:text-blue-700 font-medium"
+              className="text-cookbook-terracotta hover:text-cookbook-terracotta/80 font-medium"
             >
               ← Back to Dashboard
             </Link>
@@ -182,21 +184,24 @@ export default function PlanViewPage() {
 
 function MealCard({ meal, mealType }: { meal: MealPlanMeal; mealType: string }) {
   return (
-    <div className="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors">
+    <div className="border border-border rounded-lg p-4 hover:border-cookbook-warm-gray/40 transition-colors">
       <div className="flex items-start gap-3">
-        {meal.thumbnail && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img 
-            src={meal.thumbnail} 
-            alt={meal.name}
-            className="w-16 h-16 rounded-md object-cover"
-          />
-        )}
+        <MealImage
+          src={meal.thumbnail}
+          alt={meal.name}
+          size="thumbnail"
+          mealName={meal.name}
+          mealType={mealType}
+          className="!w-16 !h-16 rounded-md"
+        />
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
-            {mealType}
-          </p>
-          <h3 className="text-base font-semibold text-gray-900 truncate">
+          <div className="flex items-center gap-1.5 mb-1">
+            <MealTypeIcon type={mealType} size="sm" />
+            <p className="text-xs font-medium text-cookbook-warm-gray uppercase tracking-wide">
+              {mealType}
+            </p>
+          </div>
+          <h3 className="text-base font-semibold text-foreground truncate">
             {meal.name}
           </h3>
         </div>

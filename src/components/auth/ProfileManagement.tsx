@@ -336,7 +336,7 @@ export default function ProfileManagement() {
           
           {showRefreshHint && (
             <div className="mt-2 p-2 bg-blue-50 rounded text-xs">
-              <p className="text-blue-700 mb-1">After clicking the verification link, if your email hasn't updated:</p>
+              <p className="text-blue-700 mb-1">After clicking the verification link, if your email hasn&apos;t updated:</p>
               <div className="flex gap-2">
                 <button
                   type="button"

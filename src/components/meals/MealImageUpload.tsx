@@ -4,6 +4,7 @@ import { useRef, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useImageUpload } from '@/hooks/useImageUpload';
+import { toast } from 'sonner';
 
 export interface MealImageUploadProps {
   currentImageUrl?: string;
@@ -17,15 +18,20 @@ export function MealImageUpload({
   disabled,
 }: MealImageUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [preview, setPreview] = useState<string | null>(currentImageUrl ?? null);
+  const [preview, setPreview] = useState<string | null>(
+    currentImageUrl ?? null,
+  );
   const [isDragging, setIsDragging] = useState(false);
-  const { upload, uploading, error, clearError } = useImageUpload();
+  const { upload, uploading, error, clearError, deleteImage } =
+    useImageUpload();
 
   const handleFile = useCallback(
     async (file: File) => {
       clearError();
 
-      // upload() runs validation internally and sets error state on failure
+      // Store old URL before overwriting — delete after successful new upload
+      const oldUrl = currentImageUrl;
+
       // Show local preview immediately while uploading
       const reader = new FileReader();
       reader.onloadend = () => setPreview(reader.result as string);
@@ -35,12 +41,19 @@ export function MealImageUpload({
       if (url) {
         setPreview(url);
         onImageUrlChange(url);
+        // Await old image deletion — log warning on failure but don't block replace
+        if (oldUrl) {
+          const deleted = await deleteImage(oldUrl);
+          if (!deleted) {
+            console.warn('Failed to delete old image during replace:', oldUrl);
+          }
+        }
       } else {
         // Revert preview on failure
         setPreview(currentImageUrl ?? null);
       }
     },
-    [upload, onImageUrlChange, currentImageUrl, clearError],
+    [upload, onImageUrlChange, currentImageUrl, clearError, deleteImage],
   );
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -56,7 +69,13 @@ export function MealImageUpload({
     if (file?.type.startsWith('image/')) handleFile(file);
   };
 
-  const handleRemove = () => {
+  const handleRemove = async () => {
+    if (!currentImageUrl) return;
+    const success = await deleteImage(currentImageUrl);
+    if (!success) {
+      toast.error('Failed to delete image. Please try again.');
+      return;
+    }
     setPreview(null);
     onImageUrlChange(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -70,19 +89,21 @@ export function MealImageUpload({
         className={cn(
           'relative flex flex-col items-center justify-center border-2 border-dashed rounded-lg transition-colors',
           isDragging && 'border-primary bg-primary/5',
-          !preview && !isDragging && 'border-input hover:border-primary/50 cursor-pointer p-6 text-center',
+          !preview &&
+            !isDragging &&
+            'border-input hover:border-primary/50 cursor-pointer p-6 text-center',
           preview && !uploading && 'border-transparent cursor-pointer',
           uploading && 'border-input p-6 text-center',
           !isInteractive && 'opacity-60 pointer-events-none',
         )}
         onClick={() => isInteractive && fileInputRef.current?.click()}
-        onKeyDown={(e) => {
+        onKeyDown={e => {
           if ((e.key === 'Enter' || e.key === ' ') && isInteractive) {
             e.preventDefault();
             fileInputRef.current?.click();
           }
         }}
-        onDragOver={(e) => {
+        onDragOver={e => {
           e.preventDefault();
           if (isInteractive) setIsDragging(true);
         }}
@@ -90,7 +111,9 @@ export function MealImageUpload({
         onDrop={handleDrop}
         role="button"
         tabIndex={disabled ? -1 : 0}
-        aria-label={preview ? 'Click to replace meal image' : 'Click to upload meal image'}
+        aria-label={
+          preview ? 'Click to replace meal image' : 'Click to upload meal image'
+        }
         data-testid="meal-image-upload"
       >
         <input
@@ -155,7 +178,8 @@ export function MealImageUpload({
               <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
             </svg>
             <p className="text-sm font-medium">
-              <span className="text-primary">Click to upload</span> or drag and drop
+              <span className="text-primary">Click to upload</span> or drag and
+              drop
             </p>
             <p className="text-xs">JPEG, PNG or WebP · max 5MB</p>
           </div>

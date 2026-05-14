@@ -29,14 +29,20 @@ interface SharedPlanData {
   meals: Record<string, Record<string, SharedMeal>>;
 }
 
-export default function SharedMealPlanPage({ params }: { params: { token: string } }) {
+export default function SharedMealPlanPage({
+  params,
+}: {
+  params: { token: string };
+}) {
   const { data, isLoading, error } = useQuery<SharedPlanData>({
     queryKey: ['shared-meal-plan', params.token],
     queryFn: async () => {
       const response = await fetch(`/api/shared/${params.token}`);
       if (!response.ok) {
         if (response.status === 404) {
-          throw new Error('This shared meal plan was not found or has been removed.');
+          throw new Error(
+            'This shared meal plan was not found or has been removed.',
+          );
         }
         if (response.status === 410) {
           throw new Error('This shared meal plan has expired.');
@@ -63,8 +69,12 @@ export default function SharedMealPlanPage({ params }: { params: { token: string
           <div className="mb-4">
             <Calendar className="w-16 h-16 text-gray-300 mx-auto" />
           </div>
-          <ErrorMessage 
-            message={error instanceof Error ? error.message : 'Failed to load shared meal plan'} 
+          <ErrorMessage
+            message={
+              error instanceof Error
+                ? error.message
+                : 'Failed to load shared meal plan'
+            }
           />
         </div>
       </div>
@@ -76,12 +86,13 @@ export default function SharedMealPlanPage({ params }: { params: { token: string
   }
 
   const { mealPlan, meals } = data;
-  
+
   // Get sorted dates for the week
   const sortedDates = Object.keys(meals).sort();
-  const weekRange = sortedDates.length > 0 
-    ? `${format(parseISO(sortedDates[0]), 'MMM d')} - ${format(parseISO(sortedDates[sortedDates.length - 1]), 'MMM d, yyyy')}`
-    : '';
+  const weekRange =
+    sortedDates.length > 0
+      ? `${format(parseISO(sortedDates[0]), 'MMM d')} - ${format(parseISO(sortedDates[sortedDates.length - 1]), 'MMM d, yyyy')}`
+      : '';
 
   // Calculate total meals
   let totalMeals = 0;
@@ -92,8 +103,18 @@ export default function SharedMealPlanPage({ params }: { params: { token: string
     if (dayMeals?.dinner) totalMeals++;
   });
 
+  const formatIngredients = (ingredients: unknown): string => {
+    if (typeof ingredients === 'string') {
+      return ingredients;
+    }
+    return JSON.stringify(ingredients);
+  };
+
   const renderMealCard = (meal: SharedMeal, mealType: string) => (
-    <div key={`${meal.id}-${mealType}`} className="bg-white rounded-lg border border-gray-200 p-4">
+    <div
+      key={`${meal.id}-${mealType}`}
+      className="bg-white rounded-lg border border-gray-200 p-4"
+    >
       <div className="space-y-2">
         <h4 className="font-medium text-gray-900">{meal.name}</h4>
         {meal.description && (
@@ -103,8 +124,11 @@ export default function SharedMealPlanPage({ params }: { params: { token: string
 
       {meal.tags && meal.tags.length > 0 && (
         <div className="flex flex-wrap gap-1 mb-3">
-          {meal.tags.map((tag) => (
-            <span key={tag} className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded">
+          {meal.tags.map(tag => (
+            <span
+              key={tag}
+              className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded"
+            >
               {tag}
             </span>
           ))}
@@ -113,21 +137,24 @@ export default function SharedMealPlanPage({ params }: { params: { token: string
 
       {mealPlan.includeDetails && (
         <div className="border-t pt-3 mt-3">
-          {meal.ingredients && (
+          {meal.ingredients !== undefined && meal.ingredients !== null && (
             <div className="mb-3">
-              <h5 className="text-sm font-medium text-gray-900 mb-1">Ingredients</h5>
+              <h5 className="text-sm font-medium text-gray-900 mb-1">
+                Ingredients
+              </h5>
               <div className="text-sm text-gray-600">
-                {typeof meal.ingredients === 'string' 
-                  ? meal.ingredients 
-                  : JSON.stringify(meal.ingredients)
-                }
+                {formatIngredients(meal.ingredients)}
               </div>
             </div>
           )}
           {meal.instructions && (
             <div>
-              <h5 className="text-sm font-medium text-gray-900 mb-1">Instructions</h5>
-              <p className="text-sm text-gray-600 whitespace-pre-wrap">{meal.instructions}</p>
+              <h5 className="text-sm font-medium text-gray-900 mb-1">
+                Instructions
+              </h5>
+              <p className="text-sm text-gray-600 whitespace-pre-wrap">
+                {meal.instructions}
+              </p>
             </div>
           )}
         </div>
@@ -142,23 +169,29 @@ export default function SharedMealPlanPage({ params }: { params: { token: string
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-2">
             <Calendar className="w-6 h-6 text-blue-600" />
-            <h1 className="text-2xl font-bold text-gray-900">Shared Meal Plan</h1>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Shared Meal Plan
+            </h1>
           </div>
           <p className="text-gray-600">{weekRange}</p>
           <p className="text-sm text-gray-500 mt-1">
-            {totalMeals} meals planned • Shared {format(parseISO(mealPlan.sharedAt), 'MMM d, yyyy')}
+            {totalMeals} meals planned • Shared{' '}
+            {format(parseISO(mealPlan.sharedAt), 'MMM d, yyyy')}
           </p>
         </div>
 
         {/* Meal Plan Grid */}
         <div className="space-y-6">
-          {sortedDates.map((date) => {
+          {sortedDates.map(date => {
             const dayMeals = meals[date];
             const dayName = format(parseISO(date), 'EEEE');
             const dayDate = format(parseISO(date), 'MMM d');
-            
+
             return (
-              <div key={date} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div
+                key={date}
+                className="bg-white rounded-xl shadow-sm border border-gray-200 p-6"
+              >
                 <div className="flex items-center gap-3 mb-4">
                   <div className="p-2 bg-blue-100 rounded-lg">
                     <Calendar className="w-4 h-4 text-blue-600" />
@@ -168,16 +201,20 @@ export default function SharedMealPlanPage({ params }: { params: { token: string
                     <p className="text-sm text-gray-500">{dayDate}</p>
                   </div>
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {dayMeals?.breakfast && renderMealCard(dayMeals.breakfast, 'breakfast')}
+                  {dayMeals?.breakfast &&
+                    renderMealCard(dayMeals.breakfast, 'breakfast')}
                   {dayMeals?.lunch && renderMealCard(dayMeals.lunch, 'lunch')}
-                  {dayMeals?.dinner && renderMealCard(dayMeals.dinner, 'dinner')}
-                  
+                  {dayMeals?.dinner &&
+                    renderMealCard(dayMeals.dinner, 'dinner')}
+
                   {/* Empty state for missing meals */}
                   {!dayMeals?.breakfast && (
                     <div className="bg-gray-50 rounded-lg border-2 border-dashed border-gray-200 p-4 text-center">
-                      <p className="text-sm text-gray-400">No breakfast planned</p>
+                      <p className="text-sm text-gray-400">
+                        No breakfast planned
+                      </p>
                     </div>
                   )}
                   {!dayMeals?.lunch && (
@@ -200,7 +237,7 @@ export default function SharedMealPlanPage({ params }: { params: { token: string
         <div className="text-center mt-12 py-8 border-t border-gray-200">
           <p className="text-sm text-gray-500">
             This meal plan was shared from{' '}
-            <span className="font-medium text-gray-700">BMAD Meal Planner</span>
+            <span className="font-medium text-gray-700">Forkast</span>
           </p>
           <p className="text-xs text-gray-400 mt-1">
             Create your own meal plans at bmad-meal-planner.com

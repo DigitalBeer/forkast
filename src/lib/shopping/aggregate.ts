@@ -173,7 +173,7 @@ function parseQuantityFromName(rawName: string): { cleanName: string; quantity: 
   }
 
   // Pattern: "1/2 cup flour" or "1 tbsp oil" -> qty=0.5/1, unit="cup"/"tbsp", name="flour"/"oil"
-  const fractionUnitPattern = /^([\d\/\.]+)\s+(cup|cups|tbsp|tsp|oz|ml|g|kg|lb|lbs|tablespoon|teaspoon)\s+(.+)$/i;
+  const fractionUnitPattern = /^([\d/.]+)\s+(cup|cups|tbsp|tsp|oz|ml|g|kg|lb|lbs|tablespoon|teaspoon)\s+(.+)$/;
   const fractionMatch = name.match(fractionUnitPattern);
   if (fractionMatch) {
     const qtyStr = fractionMatch[1];

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import Image from 'next/image';
+import { MealImage } from '@/components/meals/MealImage';
 import { Sparkles, X, Plus, RefreshCw, AlertCircle } from 'lucide-react';
 
 interface UserRecommendation {
@@ -98,15 +98,6 @@ export function RecommendedMealsCard() {
         }
     };
 
-    // Safer placeholder image using CSS/div instead of btoa()
-    const Placeholder = ({ name }: { name: string }) => (
-        <div className="w-full h-full bg-yellow-100 flex items-center justify-center p-4 text-center">
-            <span className="text-yellow-800 text-[10px] font-medium leading-tight">
-                {name}
-            </span>
-        </div>
-    );
-
     return (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 lg:col-span-2">
             <div className="flex items-center justify-between mb-4">
@@ -162,16 +153,13 @@ export function RecommendedMealsCard() {
                         <div key={rec.id} className="flex-shrink-0 w-40 group relative">
                             {/* Image */}
                             <div className="relative w-40 h-28 rounded-lg overflow-hidden bg-yellow-50">
-                                {rec.imageUrl ? (
-                                    <Image
-                                        src={rec.imageUrl}
-                                        alt={rec.name}
-                                        fill
-                                        className="object-cover"
-                                    />
-                                ) : (
-                                    <Placeholder name={rec.name} />
-                                )}
+                                <MealImage
+                                    src={rec.imageUrl}
+                                    alt={rec.name}
+                                    size="thumbnail"
+                                    mealName={rec.name}
+                                    className="!w-40 !h-28 rounded-lg"
+                                />
 
                                 {/* Dismiss Button */}
                                 <button

@@ -4,12 +4,12 @@ import { useDrop } from 'react-dnd';
 import { useRef } from 'react';
 import type { Meal, MealType } from '@/types/meal';
 import { MealCard } from './MealCard';
+import { MealTypeIcon } from '@/components/ui/MealTypeIcon';
 
 interface MealSlotProps {
   date: string;
   mealType: MealType;
   label: string;
-  icon: string;
   meal?: Meal;
   onDrop: (date: string, mealType: MealType, meal: Meal) => void;
   onDropOccupied?: (
@@ -31,7 +31,6 @@ export function MealSlot({
   date,
   mealType,
   label,
-  icon,
   meal,
   onDrop,
   onDropOccupied,
@@ -77,7 +76,7 @@ export function MealSlot({
   const isActive = isOver && canDrop;
 
   // Determine background color based on state
-  let backgroundClass = 'bg-gray-50 border-gray-200';
+  let backgroundClass = 'bg-muted/50 border-border';
 
   if (isActive) {
     if (meal) {
@@ -100,8 +99,8 @@ export function MealSlot({
       data-testid={`meal-slot-${date}-${mealType}`}
     >
       {showLabel && (
-        <div className="text-xs font-medium text-gray-600 mb-1 truncate">
-          <span className="mr-1">{icon}</span>
+        <div className="text-xs font-medium text-muted-foreground mb-1 truncate flex items-center gap-1">
+          <MealTypeIcon type={mealType} size="sm" />
           {label}
         </div>
       )}
@@ -123,7 +122,7 @@ export function MealSlot({
           />
         </>
       ) : (
-        <div className="text-xs text-gray-400 text-center py-4">
+        <div className="text-xs text-muted-foreground/60 text-center py-4">
           Drop meal here
         </div>
       )}

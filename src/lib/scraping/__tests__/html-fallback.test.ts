@@ -181,5 +181,54 @@ describe('HTML Fallback Parser', () => {
 
       expect(result?.instructions).toBe('1. Step one\n2. Step two');
     });
+
+    it('falls back to instructions container text when no list items found', () => {
+      const html = `
+        <html>
+          <body>
+            <h1>Text Instructions</h1>
+            <ul class="ingredients"><li>Item</li></ul>
+            <div class="recipe-instructions">Mix everything together and bake at 350.</div>
+          </body>
+        </html>
+      `;
+
+      const result = parseHtmlFallback(html, 'https://example.com');
+
+      expect(result?.instructions).toBe('1. Mix everything together and bake at 350.');
+    });
+
+    it('handles empty text in matched selectors', () => {
+      const html = `
+        <html>
+          <body>
+            <span class="prep-time"></span>
+            <h1 class="recipe-name"></h1>
+            <span class="cook-time"></span>
+            <span class="servings"></span>
+            <article>
+              <h1>Real Title</h1>
+              <ul class="ingredients">
+                <li></li>
+                <li>Actual item</li>
+              </ul>
+              <div class="recipe-image">
+                <img src="/relative-image.jpg" />
+              </div>
+              <ul class="instructions">
+                <li>Do the thing</li>
+              </ul>
+            </article>
+          </body>
+        </html>
+      `;
+
+      const result = parseHtmlFallback(html, 'https://example.com');
+
+      expect(result).not.toBeNull();
+      expect(result?.name).toBe('Real Title');
+      expect(result?.ingredients).toEqual(['Actual item']);
+      expect(result?.imageUrl).toBeUndefined();
+    });
   });
 });

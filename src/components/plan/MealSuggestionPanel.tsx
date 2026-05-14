@@ -13,15 +13,15 @@ export function MealSuggestionPanel({ suggestions }: MealSuggestionPanelProps) {
   const uniqueSuggestions = Array.from(new Map(suggestions.map(item => [item.id, item])).values());
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6 flex flex-col">
+    <div className="bg-card rounded-xl shadow-lg p-6 flex flex-col border border-border">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">Meal Suggestions</h3>
+        <h3 className="text-lg font-serif font-semibold text-foreground">Meal Suggestions</h3>
       </div>
 
       {/* Suggestions List */}
       <div className="h-[800px] overflow-y-auto pr-2">
         {uniqueSuggestions.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
+          <div className="text-center py-8 text-muted-foreground">
             No suggestions available. Click &apos;Refresh Suggestions&apos; to get new suggestions.
           </div>
         ) : (

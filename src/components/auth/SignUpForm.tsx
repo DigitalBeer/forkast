@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useAuthStore } from "@/store/auth";
 import type { AuthState } from "@/store/auth";
 import { hasAnonymousData, migrateAnonymousData, getAnonymousDataPreview } from "@/lib/migration/anonymousDataMigration";
+import OnboardingWizard from "@/components/onboarding/OnboardingWizard";
 
 
 export default function SignUpForm() {
@@ -13,6 +14,7 @@ export default function SignUpForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [showWizard, setShowWizard] = useState(false);
   const [hasData, setHasData] = useState(false);
   const [dataPreview, setDataPreview] = useState({ mealCount: 0, planDrafts: 0 });
   const setUser = useAuthStore((s: AuthState) => s.setUser);
@@ -37,23 +39,39 @@ export default function SignUpForm() {
       setLoading(false);
     } else {
       setUser(data.user ?? null);
-      
+
       // Migrate anonymous data if user exists and has data
       if (data.user && hasData) {
         const migrationResult = await migrateAnonymousData(data.user.id);
-        if (migrationResult.success) {
-          setMessage(
-            `Success! ${migrationResult.migratedMeals > 0 ? `${migrationResult.migratedMeals} meal(s) migrated. ` : ''}Please check your email for a confirmation link.`
-          );
-        } else {
-          setMessage("Account created! Please check your email. Note: Some data migration failed.");
+        if (!migrationResult.success) {
+          setMessage("Account created! Note: Some data migration failed.");
         }
-      } else {
-        setMessage("Success! Please check your email for a confirmation link.");
       }
       setLoading(false);
+      setShowWizard(true);
     }
   };
+
+  if (showWizard) {
+    return (
+      <div className="w-full">
+        <div className="mb-6 text-center">
+          <h1 className="text-2xl font-bold text-gray-900">Set up your taste profile</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Tell us your preferences so we can suggest meals you will love.
+          </p>
+        </div>
+        {message && <p className="text-amber-600 text-sm mb-4 text-center">{message}</p>}
+        <OnboardingWizard
+          onComplete={() => setMessage("All done! Please check your email to confirm your account.")}
+          onSkip={() => setMessage("Preferences skipped. Please check your email to confirm your account.")}
+        />
+        {message && message.includes("check your email") && (
+          <p className="text-green-600 text-sm mt-4 text-center">{message}</p>
+        )}
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 w-full">
@@ -65,7 +83,7 @@ export default function SignUpForm() {
           </p>
         </div>
       )}
-      
+
       <div>
         <label className="block text-sm font-medium">Email</label>
         <input

@@ -1,7 +1,11 @@
 // Note: Test file imports internal classes for testing only
 // Production code should use meals.ts as the public API
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { getMealAdapter, LocalStorageAdapter, SupabaseAdapter } from './adapters';
+import {
+  getMealAdapter,
+  LocalStorageAdapter,
+  SupabaseAdapter,
+} from './adapters';
 import { createClient } from '@/lib/supabase/client';
 
 vi.mock('@/lib/supabase/client', () => ({
@@ -38,7 +42,7 @@ describe('Storage Adapters', () => {
     tags: ['test'],
   };
 
-  let mockQueryBuilder: Record<string, any>;
+  let mockQueryBuilder: Record<string, unknown>;
   let mockFrom: ReturnType<typeof vi.fn>;
   let mockStorageFrom: ReturnType<typeof vi.fn>;
 
@@ -48,23 +52,28 @@ describe('Storage Adapters', () => {
 
     // Chainable query builder — every method returns itself, thenable by default
     mockQueryBuilder = {};
-    ['select', 'upsert', 'delete', 'eq', 'single', 'maybeSingle'].forEach(method => {
-      mockQueryBuilder[method] = vi.fn().mockReturnValue(mockQueryBuilder);
-    });
+    ['select', 'upsert', 'delete', 'eq', 'single', 'maybeSingle'].forEach(
+      method => {
+        mockQueryBuilder[method] = vi.fn().mockReturnValue(mockQueryBuilder);
+      },
+    );
     // Default thenable resolution
-    mockQueryBuilder.then = (resolve: any) =>
-      resolve({ data: [], error: null });
+    mockQueryBuilder.then = (
+      resolve: (value: { data: unknown[]; error: unknown }) => void,
+    ) => resolve({ data: [], error: null });
 
     mockFrom = vi.fn().mockReturnValue(mockQueryBuilder);
     mockStorageFrom = vi.fn().mockReturnValue({
       upload: vi.fn().mockResolvedValue({ error: null }),
-      getPublicUrl: vi.fn(() => ({ data: { publicUrl: 'http://example.com/image.png' } })),
+      getPublicUrl: vi.fn(() => ({
+        data: { publicUrl: 'http://example.com/image.png' },
+      })),
     });
 
     vi.mocked(createClient).mockReturnValue({
       from: mockFrom,
       storage: { from: mockStorageFrom },
-    } as any);
+    } as ReturnType<typeof createClient>);
   });
 
   describe('LocalStorageAdapter', () => {
@@ -113,8 +122,9 @@ describe('Storage Adapters', () => {
     });
 
     it('should upsert a meal', async () => {
-      mockQueryBuilder.then = (resolve: any) =>
-        resolve({ data: { id: '1', ...testMeal }, error: null });
+      mockQueryBuilder.then = (
+        resolve: (value: { data: unknown; error: unknown }) => void,
+      ) => resolve({ data: { id: '1', ...testMeal }, error: null });
 
       await adapter.upsert(testMeal);
 
@@ -125,8 +135,12 @@ describe('Storage Adapters', () => {
     });
 
     it('should get a meal by id', async () => {
-      mockQueryBuilder.then = (resolve: any) =>
-        resolve({ data: { id: '123', name: 'Test' }, error: null });
+      mockQueryBuilder.then = (
+        resolve: (value: {
+          data: { id: string; name: string };
+          error: unknown;
+        }) => void,
+      ) => resolve({ data: { id: '123', name: 'Test' }, error: null });
 
       await adapter.get('123');
 
@@ -137,8 +151,9 @@ describe('Storage Adapters', () => {
     });
 
     it('should get all meals', async () => {
-      mockQueryBuilder.then = (resolve: any) =>
-        resolve({ data: [], error: null });
+      mockQueryBuilder.then = (
+        resolve: (value: { data: unknown[]; error: unknown }) => void,
+      ) => resolve({ data: [], error: null });
 
       await adapter.getAll();
 
@@ -147,7 +162,7 @@ describe('Storage Adapters', () => {
     });
 
     it('should delete a meal by id', async () => {
-      mockQueryBuilder.then = (resolve: any) =>
+      mockQueryBuilder.then = (resolve: (value: { error: unknown }) => void) =>
         resolve({ error: null });
 
       await adapter.delete('123');
@@ -155,6 +170,81 @@ describe('Storage Adapters', () => {
       expect(mockFrom).toHaveBeenCalledWith('meals');
       expect(mockQueryBuilder.delete).toHaveBeenCalled();
       expect(mockQueryBuilder.eq).toHaveBeenCalledWith('id', '123');
+    });
+  });
+
+  describe('SupabaseAdapter — image upload', () => {
+    let adapter: SupabaseAdapter;
+
+    beforeEach(() => {
+      adapter = new SupabaseAdapter();
+      vi.stubGlobal('crypto', {
+        randomUUID: vi.fn().mockReturnValue('mock-uuid'),
+      });
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('should handle image upload during upsert', async () => {
+      const file = new File(['dummy'], 'photo.jpg', { type: 'image/jpeg' });
+      const mealWithImage = { ...testMeal, image: file };
+
+      mockQueryBuilder.then = (
+        resolve: (value: { data: { id: string }; error: unknown }) => void,
+      ) => resolve({ data: { id: '1' }, error: null });
+
+      await adapter.upsert(mealWithImage, undefined, 'user-1');
+
+      expect(mockStorageFrom).toHaveBeenCalledWith('meal-images');
+      expect(mockStorageFrom().upload).toHaveBeenCalledWith(
+        'user-1/mock-uuid.jpg',
+        file,
+        {
+          upsert: false,
+          contentType: 'image/jpeg',
+        },
+      );
+    });
+
+    it('should throw on upload error', async () => {
+      const file = new File(['dummy'], 'photo.jpg', { type: 'image/jpeg' });
+      const mealWithImage = { ...testMeal, image: file };
+
+      mockStorageFrom().upload = vi.fn().mockResolvedValue({
+        error: { message: 'Upload failed' },
+      });
+
+      await expect(
+        adapter.upsert(mealWithImage, undefined, 'user-1'),
+      ).rejects.toThrow('Upload failed');
+    });
+  });
+
+  describe('LocalStorageAdapter — edge cases', () => {
+    let adapter: LocalStorageAdapter;
+
+    beforeEach(() => {
+      adapter = new LocalStorageAdapter();
+    });
+
+    it('should handle corrupt localStorage gracefully', async () => {
+      localStorage.setItem('bmad_meals', 'not-valid-json');
+      const meals = await adapter.getAll();
+      expect(meals).toEqual([]);
+    });
+
+    it('should filter out invalid meal data via Zod schema', async () => {
+      adapter.upsert(testMeal);
+      // Manually corrupt one meal's data
+      const raw = JSON.parse(localStorage.getItem('bmad_meals')!);
+      raw[0].name = 123; // Makes Zod validation fail
+      localStorage.setItem('bmad_meals', JSON.stringify(raw));
+
+      const meals = await adapter.getAll();
+      // The invalid meal should be filtered out
+      expect(meals).toHaveLength(0);
     });
   });
 

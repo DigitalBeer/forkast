@@ -1,11 +1,12 @@
 'use client';
 
-import Image from 'next/image';
 import Link from 'next/link';
 import { useDrag } from 'react-dnd';
 import { formatDistanceToNow } from 'date-fns';
 import { Eye } from 'lucide-react';
 import type { Meal } from '@/types/meal';
+import { MealTypeIcon } from '@/components/ui/MealTypeIcon';
+import { MealImage } from '@/components/meals/MealImage';
 
 interface MealCardProps {
   meal: Meal;
@@ -38,7 +39,7 @@ export function MealCard({ meal, onRemove, onDuplicate, onCooked, onSkip, compac
     : 'Never made';
 
   const finalClassName = `
-    bg-white rounded-lg shadow-sm border border-gray-200 cursor-move transition-all duration-200
+    bg-card rounded-lg shadow-sm border border-border cursor-move transition-all duration-200
     ${isDragging ? 'opacity-50' : 'opacity-100'}
     ${compact ? 'p-2' : 'p-3'}
   `;
@@ -54,22 +55,25 @@ export function MealCard({ meal, onRemove, onDuplicate, onCooked, onSkip, compac
     >
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
-          <h4 className={`font-medium text-gray-900 ${
-            compact ? 'text-sm' : 'text-base'
-          }`}>
-            {meal.name}
-          </h4>
+          <div className="flex items-center gap-1.5">
+            {meal.meal_type && (
+              <MealTypeIcon type={meal.meal_type} size={compact ? 'sm' : 'md'} />
+            )}
+            <h4 className={`font-medium text-foreground ${
+              compact ? 'text-sm' : 'text-base'
+            }`}>
+              {meal.name}
+            </h4>
+          </div>
           
-          {meal.image_url && (
-            <div className="mt-2 relative h-16">
-              <Image
-                src={meal.image_url}
-                alt={meal.name}
-                fill
-                className="object-cover rounded"
-              />
-            </div>
-          )}
+          <MealImage
+            src={meal.image_url}
+            alt={meal.name}
+            size="thumbnail"
+            mealName={meal.name}
+            mealType={meal.meal_type}
+            className="!h-16 mt-2 rounded"
+          />
           
           <div className={`text-xs text-gray-500 mt-1 ${
             compact ? 'hidden' : 'block'

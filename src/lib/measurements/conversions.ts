@@ -130,8 +130,6 @@ export function convert(value: number, from: string, to: string): number | null 
       return convertVolume(value, fromLower as VolumeUnit, toLower as VolumeUnit);
     case 'temperature':
       return convertTemperature(value, fromLower as TemperatureUnit, toLower as TemperatureUnit);
-    default:
-      return null;
   }
 }
 

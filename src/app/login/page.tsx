@@ -1,7 +1,7 @@
 import LoginForm from "@/components/auth/LoginForm";
 
 export const metadata = {
-  title: "Log In | BMAD Meal Planner",
+  title: "Log In | Forkast",
 };
 
 export default function LoginPage() {

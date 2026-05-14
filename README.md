@@ -1,6 +1,6 @@
-# BMAD Meal Planner
+# Forkast
 
-Welcome to the BMAD Meal Planner project! This application is designed to help you discover recipes, create shopping lists, and plan your meals with ease.
+Welcome to the Forkast project! This application is designed to help you discover recipes, create shopping lists, and plan your meals with ease.
 
 ## Getting Started
 

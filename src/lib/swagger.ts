@@ -6,7 +6,7 @@ export const getApiDocs = async () => {
         definition: {
             openapi: '3.0.0',
             info: {
-                title: 'BMAD Meal Planner API',
+                title: 'Forkast API',
                 version: '1.0.0',
             },
             components: {

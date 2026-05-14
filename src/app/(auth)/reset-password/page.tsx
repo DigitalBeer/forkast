@@ -1,7 +1,7 @@
 import ResetPasswordClientPage from "./ResetPasswordClientPage";
 
 export const metadata = {
-  title: "Reset Password | BMAD Meal Planner",
+  title: "Reset Password | Forkast",
 };
 
 export default function ResetPasswordPage() {

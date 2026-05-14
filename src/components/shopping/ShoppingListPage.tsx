@@ -114,7 +114,7 @@ export function ShoppingListPage({ mealPlanId }: ShoppingListPageProps) {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 print:bg-white">
+        <div className="min-h-screen bg-gray-50 print:bg-white print:min-h-0">
             {/* Screen Content - Hidden when printing */}
             <div className="no-print">
                 {/* Header */}
