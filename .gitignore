@@ -84,7 +84,7 @@ docs/
 web-bundles/
 .agent/
 _bmad/
-.test-results/
+test-results/
 .claude/commands/BMad/
 
 # Generated reports
