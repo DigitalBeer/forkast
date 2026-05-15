@@ -84,6 +84,8 @@ docs/
 web-bundles/
 .agent/
 _bmad/
+.test-results/
+.claude/commands/BMad/
 
 # Generated reports
 eslint-report.*
