@@ -25,6 +25,15 @@
 *.pem
 claude.md
 .vibeyardignore
+.mcp.json
+1
+
+# Project documentation (not needed at runtime)
+QA_GUIDELINES.md
+DOCKER_DEPLOY.md
+EDGE_FUNCTION_DEPLOY.md
+README.md
+tmp-extract.mjs
 
 # debug
 npm-debug.log*
@@ -79,17 +88,24 @@ temp/
 .bmad-coverage/
 .windsurf/
 docs/
-!docs/stories/
-!docs/architecture/
 web-bundles/
 .agent/
 _bmad/
+_bmad-output/
 test-results/
-.claude/commands/BMad/
+.claude/
+.github/
+.vscode/
+.next/
+.ruff_cache/
+.swc/
+coverage/
+playwright-report/
 
 # Generated reports
 eslint-report.*
 repomix-output.*
+test-results.json
 
 # Lock files (using npm)
 yarn.lock
