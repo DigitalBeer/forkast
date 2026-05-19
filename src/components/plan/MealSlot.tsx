@@ -16,7 +16,7 @@ interface MealSlotProps {
     targetDate: string,
     targetMealType: MealType,
     droppedMeal: Meal,
-    existingMeal: Meal
+    existingMeal: Meal,
   ) => void;
   onRemove: (date: string, mealType: MealType) => void;
   onDuplicate?: (date: string, mealType: MealType, meal: Meal) => void;
@@ -42,24 +42,27 @@ export function MealSlot({
   onHover,
   showLabel = true,
 }: MealSlotProps) {
-  const [{ isOver, canDrop }, drop] = useDrop(() => ({
-    accept: 'meal',
-    drop: (item: Meal) => {
-      // If slot is occupied, call the occupied handler instead
-      if (meal && onDropOccupied) {
-        // Don't swap with itself
-        if (meal.id !== item.id) {
-          onDropOccupied(date, mealType, item, meal);
+  const [{ isOver, canDrop }, drop] = useDrop(
+    () => ({
+      accept: 'meal',
+      drop: (item: Meal) => {
+        // If slot is occupied, call the occupied handler instead
+        if (meal && onDropOccupied) {
+          // Don't swap with itself
+          if (meal.id !== item.id) {
+            onDropOccupied(date, mealType, item, meal);
+          }
+        } else {
+          onDrop(date, mealType, item);
         }
-      } else {
-        onDrop(date, mealType, item);
-      }
-    },
-    collect: (monitor) => ({
-      isOver: monitor.isOver(),
-      canDrop: monitor.canDrop(),
+      },
+      collect: monitor => ({
+        isOver: monitor.isOver(),
+        canDrop: monitor.canDrop(),
+      }),
     }),
-  }), [meal, date, mealType, onDrop, onDropOccupied]);
+    [meal, date, mealType, onDrop, onDropOccupied],
+  );
 
   // Use a stable React ref and let react-dnd decorate it to avoid TS ref type issues
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -93,7 +96,10 @@ export function MealSlot({
   return (
     <div
       ref={containerRef}
-      className={'min-h-[80px] border-2 border-dashed rounded-lg p-2 transition-all duration-200 overflow-hidden ' + backgroundClass}
+      className={
+        'min-h-[60px] max-h-[110px] border-2 border-dashed rounded-lg p-2 transition-all duration-200 overflow-hidden ' +
+        backgroundClass
+      }
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       data-testid={`meal-slot-${date}-${mealType}`}
@@ -115,8 +121,12 @@ export function MealSlot({
           <MealCard
             meal={meal}
             onRemove={() => onRemove(date, mealType)}
-            onDuplicate={onDuplicate ? () => onDuplicate(date, mealType, meal) : undefined}
-            onCooked={onCooked ? () => onCooked(date, mealType, meal) : undefined}
+            onDuplicate={
+              onDuplicate ? () => onDuplicate(date, mealType, meal) : undefined
+            }
+            onCooked={
+              onCooked ? () => onCooked(date, mealType, meal) : undefined
+            }
             onSkip={onSkip ? () => onSkip(date, mealType, meal) : undefined}
             compact
           />
@@ -129,4 +139,3 @@ export function MealSlot({
     </div>
   );
 }
-

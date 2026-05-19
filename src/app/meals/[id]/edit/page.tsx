@@ -6,6 +6,7 @@ import { useAuthStore } from "@/store/auth";
 import { MealForm, type MealFormInputs } from "@/components/meals/MealForm";
 import { getMeal, upsertMeal } from "@/lib/data/meals";
 import { toast } from "sonner";
+import { PaperPage } from "@/components/layout/PaperPage";
 
 import type { Meal } from "@/types/meal";
 
@@ -111,11 +112,11 @@ export default function EditMealPage() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center py-6 px-4">
-        <div className="w-full max-w-lg">
-          <h1 className="mb-4 text-2xl font-semibold">Edit Meal</h1>
-          <MealForm defaultValues={defaults} onSubmit={handleSubmit} />
-        </div>
-    </main>
+    <PaperPage>
+      <div className="max-w-lg">
+        <h1 className="mb-4 text-2xl font-hand font-bold text-forkast-ink">Edit Meal</h1>
+        <MealForm defaultValues={defaults} onSubmit={handleSubmit} />
+      </div>
+    </PaperPage>
   );
 }

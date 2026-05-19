@@ -4,7 +4,13 @@ import { MealImage } from '../MealImage';
 // Mock next/image for Vitest
 vi.mock('next/image', () => ({
   __esModule: true,
-  default: (props: any) => {
+  default: (props: {
+    src: string;
+    alt: string;
+    fill?: boolean;
+    sizes?: string;
+    className?: string;
+  }) => {
     const { src, alt, fill, sizes, className } = props;
     return (
       <div
@@ -18,7 +24,11 @@ vi.mock('next/image', () => ({
           justifyContent: 'center',
         }}
       >
-        <img src={src} alt={alt} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        <img
+          src={src}
+          alt={alt}
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+        />
         {fill && <div data-testid="fill-indicator">FILL</div>}
         {sizes && <div data-testid="sizes-indicator">{sizes}</div>}
         {className && <div data-testid="classname-indicator">{className}</div>}
@@ -34,7 +44,13 @@ describe('MealImage', () => {
 
   describe('when src is provided', () => {
     it('renders the Next.js Image component', () => {
-      render(<MealImage src="https://example.com/image.jpg" alt="Test meal" size="card" />);
+      render(
+        <MealImage
+          src="https://example.com/image.jpg"
+          alt="Test meal"
+          size="card"
+        />,
+      );
 
       const nextImageMock = screen.getByTestId('next-image-mock');
       expect(nextImageMock).toBeInTheDocument();
@@ -53,12 +69,16 @@ describe('MealImage', () => {
 
       // Card size
       render(<MealImage src="test.jpg" alt="Test" size="card" />);
-      expect(screen.getByTestId('sizes-indicator')).toHaveTextContent('(max-width: 768px) 50vw, 400px');
+      expect(screen.getByTestId('sizes-indicator')).toHaveTextContent(
+        '(max-width: 768px) 50vw, 400px',
+      );
       cleanup();
 
       // Full size
       render(<MealImage src="test.jpg" alt="Test" size="full" />);
-      expect(screen.getByTestId('sizes-indicator')).toHaveTextContent('(max-width: 768px) 100vw, 1200px');
+      expect(screen.getByTestId('sizes-indicator')).toHaveTextContent(
+        '(max-width: 768px) 100vw, 1200px',
+      );
     });
 
     it('applies container classes based on size when image is present', () => {
@@ -84,7 +104,14 @@ describe('MealImage', () => {
     });
 
     it('merges custom className with container classes when image is present', () => {
-      render(<MealImage src="test.jpg" alt="Test" size="card" className="border-red" />);
+      render(
+        <MealImage
+          src="test.jpg"
+          alt="Test"
+          size="card"
+          className="border-red"
+        />,
+      );
       const container = screen.getByTestId('next-image-mock').parentElement;
       expect(container).toHaveClass('h-40');
       expect(container).toHaveClass('w-full');

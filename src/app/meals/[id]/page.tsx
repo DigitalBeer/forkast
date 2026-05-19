@@ -12,6 +12,7 @@ import { MealImage } from '@/components/meals/MealImage';
 import { formatDistanceToNow } from 'date-fns';
 import { useImageUpload } from '@/hooks/useImageUpload';
 import { toast } from 'sonner';
+import { PaperPage } from '@/components/layout/PaperPage';
 
 import type { Meal, Ingredient } from '@/types/meal';
 
@@ -114,32 +115,24 @@ export default function MealDetailPage() {
   if (!meal) return <p className="p-4 text-sm">Meal not found.</p>;
 
   return (
-    <main className="flex min-h-screen flex-col">
-      {/* Header */}
-      <div className="bg-white border-b">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <Button
-              variant="ghost"
-              onClick={() => router.back()}
-              className="mb-2"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back
+    <PaperPage>
+      <div className="max-w-4xl mx-auto">
+        {/* Nav */}
+        <div className="flex items-center justify-between mb-6">
+          <Button variant="ghost" onClick={() => router.back()}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back
+          </Button>
+          <Link href={`/meals/${meal.id}/edit`}>
+            <Button>
+              <Edit className="w-4 h-4 mr-2" />
+              Edit Meal
             </Button>
-            <Link href={`/meals/${meal.id}/edit`}>
-              <Button>
-                <Edit className="w-4 h-4 mr-2" />
-                Edit Meal
-              </Button>
-            </Link>
-          </div>
+          </Link>
         </div>
-      </div>
 
-      {/* Content */}
-      <div className="flex-1 bg-gray-50">
-        <div className="max-w-4xl mx-auto px-4 py-8">
+        {/* Content */}
+        <div>
           {/* Meal Header */}
           <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
             <div className="flex flex-col md:flex-row gap-6">
@@ -260,6 +253,6 @@ export default function MealDetailPage() {
           )}
         </div>
       </div>
-    </main>
+    </PaperPage>
   );
 }

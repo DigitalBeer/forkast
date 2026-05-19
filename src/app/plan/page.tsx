@@ -11,6 +11,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { PrintableMealPlan } from '@/components/meal-plans/PrintableMealPlan';
 import { ShareModal } from '@/components/plan/ShareModal';
+import { PaperPage } from '@/components/layout/PaperPage';
 import type { MealPlanData, MealPlanMeal } from '@/types/meal';
 
 export default function PlanViewPage() {
@@ -33,38 +34,44 @@ export default function PlanViewPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <LoadingSpinner />
-      </div>
+      <PaperPage>
+        <div className="flex items-center justify-center py-32">
+          <LoadingSpinner />
+        </div>
+      </PaperPage>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <ErrorMessage 
-          message={error instanceof Error ? error.message : 'Failed to load meal plan'} 
-          onRetry={() => refetch()}
-        />
-      </div>
+      <PaperPage>
+        <div className="flex items-center justify-center py-32">
+          <ErrorMessage
+            message={error instanceof Error ? error.message : 'Failed to load meal plan'}
+            onRetry={() => refetch()}
+          />
+        </div>
+      </PaperPage>
     );
   }
 
   if (!mealPlan) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-xl text-muted-foreground mb-6">
-            You don&apos;t have an active meal plan yet.
-          </p>
-          <Link
-            href="/planner"
-            className="px-4 py-2 bg-primary text-primary-foreground font-medium rounded-md hover:bg-primary/90 transition-colors"
-          >
-            Create a Meal Plan
-          </Link>
+      <PaperPage>
+        <div className="flex items-center justify-center py-32">
+          <div className="text-center">
+            <p className="text-xl font-serif text-muted-foreground mb-6">
+              You don&apos;t have an active meal plan yet.
+            </p>
+            <Link
+              href="/planner"
+              className="px-4 py-2 bg-primary text-primary-foreground font-serif font-medium rounded-md hover:bg-primary/90 transition-colors"
+            >
+              Create a Meal Plan
+            </Link>
+          </div>
         </div>
-      </div>
+      </PaperPage>
     );
   }
 
@@ -82,12 +89,12 @@ export default function PlanViewPage() {
 
   return (
     <>
-      <div className="min-h-screen bg-background print:hidden">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <PaperPage className="print:hidden">
+        <div className="max-w-6xl mx-auto">
           <div className="flex justify-between items-center mb-8">
             <div>
-              <h1 className="text-3xl font-serif font-bold text-foreground">Your Meal Plan</h1>
-              <p className="text-muted-foreground mt-1">{weekRange}</p>
+              <h1 className="text-4xl font-hand font-bold text-forkast-ink">Your Meal Plan</h1>
+              <p className="font-serif text-muted-foreground mt-1">{weekRange}</p>
             </div>
             <div className="flex items-center gap-3">
               <button
@@ -166,7 +173,7 @@ export default function PlanViewPage() {
             </Link>
           </div>
         </div>
-      </div>
+      </PaperPage>
 
       {/* Share Modal */}
       {mealPlan && (

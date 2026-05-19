@@ -6,6 +6,11 @@
 # Usage:
 #   1. Copy .env.docker.example to .env.docker and fill in your values.
 #   2. docker compose --env-file .env.docker up --build
+#
+# Local testing with auth:
+#   Create .env.docker.local (see .env.docker.local.example) to override
+#   NEXT_PUBLIC_APP_URL to http://localhost:3000. Docker Compose picks this
+#   file up automatically if present. Requires Docker Compose v2.24+.
 
 services:
   meal-planner:
@@ -14,13 +19,20 @@ services:
       context: .
       # NEXT_PUBLIC_* vars must be passed at BUILD time — they are inlined
       # into the JavaScript bundle by the Next.js compiler.
+      # For local auth testing, use scripts/build.ps1 -Local or create
+      # .env.docker.local with NEXT_PUBLIC_APP_URL=http://localhost:3000.
       args:
         NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
         NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
         NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN}
         NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
+        NEXT_PUBLIC_APP_VERSION: ${NEXT_PUBLIC_APP_VERSION:-0.1.0}
+      # Optional local overrides for build-time args (Docker Compose v2.24+)
+      env_file:
+        - path: .env.docker.local
+          required: false
     ports:
-      - "${HOST_PORT:-3000}:3000"
+      - '${HOST_PORT:-3000}:3000'
     # Runtime-only secrets — these are never baked into the image.
     environment:
       NODE_ENV: production
@@ -31,9 +43,14 @@ services:
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
       STRIPE_PRICE_ID: ${STRIPE_PRICE_ID}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+    # Optional local overrides for runtime env vars (Docker Compose v2.24+)
+    env_file:
+      - path: .env.docker.local
+        required: false
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health || exit 1"]
+      test:
+        ['CMD-SHELL', 'wget -qO- http://localhost:3000/api/health || exit 1']
       interval: 30s
       timeout: 10s
       retries: 3

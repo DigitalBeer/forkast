@@ -31,7 +31,7 @@ export default function LoginForm() {
       } else {
         setUser(data.user ?? null);
         router.push("/");
-        // Set a state to indicate redirection for testing purposes
+        router.refresh();
         setRedirecting(true);
       }
     } catch (e) {

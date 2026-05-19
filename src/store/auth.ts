@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
-import { type User } from "@supabase/supabase-js";
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+import { type User } from '@supabase/supabase-js';
 
 export interface AuthState {
   user: User | null;
@@ -16,18 +16,18 @@ export interface AuthState {
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    set => ({
       user: null,
       loading: true,
       error: null,
-      setUser: (user) => set({ user }),
-      setLoading: (loading) => set({ loading }),
-      setError: (error) => set({ error }),
+      setUser: user => set({ user }),
+      setLoading: loading => set({ loading }),
+      setError: error => set({ error }),
       logout: () => set({ user: null }),
     }),
     {
-      name: "auth-state",
-      partialize: (state) => ({ user: state.user }),
-    }
-  )
+      name: 'forkast-auth-state-v1',
+      partialize: state => ({ user: state.user }),
+    },
+  ),
 );

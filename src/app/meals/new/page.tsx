@@ -6,6 +6,7 @@ import { upsertMeal } from "@/lib/data/meals";
 import { toast } from "sonner";
 import { useSubscription } from "@/hooks/useSubscription";
 import { UpgradePrompt } from "@/components/subscription/UpgradePrompt";
+import { PaperPage } from "@/components/layout/PaperPage";
 
 export default function NewMealPage() {
   const router = useRouter();
@@ -32,17 +33,17 @@ export default function NewMealPage() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center py-6 px-4">
-        <div className="w-full max-w-lg">
-          <h1 className="mb-4 text-2xl font-semibold">Add New Meal</h1>
-          {loading ? (
-            <div className="p-8">Loading...</div>
-          ) : !canAddMeals ? (
-            <UpgradePrompt mealCount={mealCount} mealLimit={mealLimit} variant="modal" />
-          ) : (
-            <MealForm onSubmit={handleSubmit} />
-          )}
-        </div>
-    </main>
+    <PaperPage>
+      <div className="max-w-lg">
+        <h1 className="mb-4 text-2xl font-hand font-bold text-forkast-ink">Add New Meal</h1>
+        {loading ? (
+          <div className="p-8">Loading...</div>
+        ) : !canAddMeals ? (
+          <UpgradePrompt mealCount={mealCount} mealLimit={mealLimit} variant="modal" />
+        ) : (
+          <MealForm onSubmit={handleSubmit} />
+        )}
+      </div>
+    </PaperPage>
   );
 }

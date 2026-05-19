@@ -55,7 +55,7 @@ export function MealPlanHistory() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="flex items-center justify-center py-12">
         <LoadingSpinner />
       </div>
     );
@@ -63,7 +63,7 @@ export function MealPlanHistory() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="flex items-center justify-center py-12">
         <ErrorMessage
           message={error instanceof Error ? error.message : 'Failed to load meal plan history'}
           onRetry={() => refetch()}
@@ -112,16 +112,16 @@ export function MealPlanHistory() {
 
   return (
     <>
-      <div className="min-h-screen bg-gray-50">
+      <div>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex justify-between items-center mb-8">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Meal Plan History</h1>
-              <p className="text-gray-600 mt-1">{count} saved plan{count === 1 ? '' : 's'}</p>
+              <h1 className="font-hand text-3xl text-cookbook-terracotta">Meal Plan History</h1>
+              <p className="text-muted-foreground font-serif mt-1">{count} saved plan{count === 1 ? '' : 's'}</p>
             </div>
             <Link
               href="/plan"
-              className="px-4 py-2 bg-white text-gray-800 font-medium rounded-md border border-gray-200 hover:bg-gray-50 transition-colors"
+              className="px-4 py-2 font-serif text-sm rounded-md border border-border hover:bg-muted transition-colors"
             >
               Back to Plan
             </Link>
@@ -136,7 +136,7 @@ export function MealPlanHistory() {
               return (
                 <div
                   key={plan.id}
-                  className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:border-gray-300 transition-colors"
+                  className="bg-cookbook-cream/40 rounded-lg shadow-sm border border-border p-6 hover:border-cookbook-terracotta/30 transition-colors"
                 >
                   <div className="flex justify-between items-start gap-4">
                     <Link
@@ -144,8 +144,8 @@ export function MealPlanHistory() {
                       className="min-w-0 flex-1"
                       data-testid="meal-plan-history-item"
                     >
-                      <h2 className="text-lg font-semibold text-gray-900">{weekRange}</h2>
-                      <p className="text-sm text-gray-600 mt-1">Saved {createdAt}</p>
+                      <h2 className="font-serif text-lg font-semibold text-foreground">{weekRange}</h2>
+                      <p className="text-sm text-muted-foreground font-serif mt-1">Saved {createdAt}</p>
                     </Link>
 
                     <div className="flex items-center gap-3">
@@ -156,12 +156,12 @@ export function MealPlanHistory() {
                           e.stopPropagation();
                           handleShare(plan.id);
                         }}
-                        className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors"
+                        className="flex items-center gap-1 px-3 py-1.5 bg-cookbook-terracotta text-white font-serif text-sm rounded-md hover:bg-cookbook-terracotta/90 transition-colors"
                       >
                         <Share2 className="w-3 h-3" />
                         Share
                       </button>
-                      <div className="text-sm text-gray-700 whitespace-nowrap">
+                      <div className="text-sm text-foreground font-serif whitespace-nowrap">
                         {plan.summary.mealCount} meal{plan.summary.mealCount === 1 ? '' : 's'}
                       </div>
                       <button
@@ -172,7 +172,7 @@ export function MealPlanHistory() {
                           setDeleteTarget(plan);
                           setDeleteModalOpen(true);
                         }}
-                        className="px-3 py-1.5 bg-white text-red-700 font-medium rounded-md border border-red-200 hover:bg-red-50 transition-colors"
+                        className="px-3 py-1.5 font-serif text-sm text-red-700 rounded-md border border-red-200 hover:bg-red-50 transition-colors"
                         data-testid="delete-meal-plan"
                       >
                         Delete
@@ -181,8 +181,8 @@ export function MealPlanHistory() {
                   </div>
 
                   {sampleMeals && (
-                    <p className="text-sm text-gray-600 mt-3">
-                      <span className="font-medium text-gray-700">Preview:</span> {sampleMeals}
+                    <p className="text-sm text-muted-foreground font-serif mt-3">
+                      <span className="font-serif font-medium text-foreground">Preview:</span> {sampleMeals}
                     </p>
                   )}
                 </div>
@@ -191,10 +191,10 @@ export function MealPlanHistory() {
 
             {plans.length === 0 && (
               <div className="text-center py-12">
-                <p className="text-gray-500">No saved meal plans yet.</p>
+                <p className="text-muted-foreground font-serif">No saved meal plans yet.</p>
                 <Link
                   href="/plan"
-                  className="inline-flex items-center mt-4 px-6 py-3 bg-green-600 text-white font-medium rounded-md hover:bg-green-700 transition-colors"
+                  className="inline-flex items-center mt-4 px-6 py-3 bg-cookbook-terracotta text-white font-serif rounded-md hover:bg-cookbook-terracotta/90 transition-colors"
                 >
                   Create a Meal Plan
                 </Link>
@@ -207,7 +207,7 @@ export function MealPlanHistory() {
               type="button"
               onClick={() => setOffset((prev) => Math.max(prev - limit, 0))}
               disabled={offset === 0 || isFetching}
-              className="px-4 py-2 bg-white text-gray-800 font-medium rounded-md border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-4 py-2 font-serif text-sm rounded-md border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               data-testid="meal-plan-history-prev"
             >
               Previous
@@ -216,7 +216,7 @@ export function MealPlanHistory() {
               type="button"
               onClick={() => setOffset((prev) => prev + limit)}
               disabled={!hasMore || isFetching}
-              className="px-4 py-2 bg-white text-gray-800 font-medium rounded-md border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-4 py-2 font-serif text-sm rounded-md border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               data-testid="meal-plan-history-next"
             >
               Next
@@ -237,7 +237,6 @@ export function MealPlanHistory() {
         confirmText={isDeleting ? 'Deleting...' : 'Delete'}
         cancelText="Cancel"
       />
-      {/* Share Modal */}
       {shareTargetId && (
         <ShareModal
           isOpen={shareModalOpen}

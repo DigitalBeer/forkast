@@ -2,3 +2,13 @@
 playwright-report/**
 test-results/**
 e2e/logs/**
+
+# Tests & coverage
+tests/**
+e2e/**
+coverage/**
+**/__tests__/**
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx

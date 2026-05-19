@@ -175,8 +175,8 @@ export function WeeklyCalendar({
           Weekly Calendar
         </h2>
 
-        <div className="h-[800px] overflow-y-auto">
-          <div className="grid grid-cols-[8rem_1fr_1fr_1fr] md:grid-cols-[10rem_1fr_1fr_1fr] gap-2 md:gap-3">
+        <div className="max-h-[calc(100vh-10rem)] overflow-y-auto">
+          <div className="grid grid-cols-[8rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] md:grid-cols-[10rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-2 md:gap-3">
             {/* Header row: empty corner + meal type headers */}
             <div className="sticky top-0 left-0 bg-card z-20" />
             {mealTypes.map(({ key, label }) => (

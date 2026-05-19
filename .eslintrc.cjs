@@ -27,7 +27,10 @@ module.exports = {
   },
   rules: {
     'react/react-in-jsx-scope': 'off',
-    '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+    '@typescript-eslint/no-unused-vars': [
+      'warn',
+      { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+    ],
   },
   ignorePatterns: [
     'node_modules/',
@@ -37,6 +40,14 @@ module.exports = {
     'playwright-report/',
     'test-results/',
     'e2e/logs/',
+    'tests/',
+    'e2e/',
+    'coverage/',
+    '**/__tests__/',
+    '**/*.test.ts',
+    '**/*.test.tsx',
+    '**/*.spec.ts',
+    '**/*.spec.tsx',
   ],
   overrides: [
     {

@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { format, startOfWeek, addDays } from 'date-fns';
 import { WeeklyCalendar } from '@/components/plan/WeeklyCalendar';
 import { MealSuggestionPanel } from '@/components/plan/MealSuggestionPanel';
+import { PaperPage } from '@/components/layout/PaperPage';
 import {
   DIETARY_TYPES,
   type Meal,
@@ -20,6 +21,7 @@ import {
   createUndoSnapshot,
   UNDO_TOAST_DURATION_MS,
 } from '@/lib/meal-plan/undo-stack';
+import { useAuthStore } from '@/store/auth';
 
 type MealPlan = {
   [date: string]: Partial<Record<MealType, Meal>>;
@@ -28,6 +30,7 @@ type MealPlan = {
 export default function PlannerPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const user = useAuthStore(s => s.user);
 
   const [weekStart, _setWeekStart] = useState(() => {
     const startParam = searchParams.get('start');
@@ -284,6 +287,7 @@ export default function PlannerPage() {
   };
 
   const handleGenerateSuggestions = async () => {
+    if (!user) return;
     setError(null);
     try {
       // Use explicit user-set filters; fall back to saved profile preferences
@@ -367,7 +371,7 @@ export default function PlannerPage() {
   useEffect(() => {
     handleGenerateSuggestions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dietaryTypes, mealTypes, mealCount, weekStart, profileDietaryPrefs]);
+  }, [user, dietaryTypes, mealTypes, mealCount, weekStart, profileDietaryPrefs]);
 
   const handleMealDrop = (date: string, mealType: MealType, meal: Meal) => {
     setMeals(prev => ({
@@ -534,46 +538,55 @@ export default function PlannerPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 p-4 md:p-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-800">
-            {error}
-          </div>
+      <PaperPage>
+        <div className="bg-red-50 border border-red-200 rounded p-4 text-red-800 font-serif">
+          {error}
         </div>
-      </div>
+      </PaperPage>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <PaperPage>
+      <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-            Plan Your Meals
-          </h1>
+          <div>
+            <div className="text-xs font-serif uppercase tracking-widest text-forkast-forest mb-1">
+              The Week Ahead
+            </div>
+            <h1 className="font-hand text-5xl font-bold text-forkast-ink leading-none">
+              Plan Your Meals
+            </h1>
+          </div>
         </div>
 
         {/* Horizontal Filter Bar */}
-        <div className="bg-white rounded-lg shadow-lg p-4 md:p-6">
+        <div
+          className="rounded p-4 md:p-5 wobble"
+          style={{
+            background: 'rgba(168,50,50,0.04)',
+            border: '1.4px solid var(--forkast-rule)',
+          }}
+        >
           <div className="flex flex-col lg:flex-row lg:items-end gap-4">
             {/* Week Start */}
             <div className="w-full lg:w-56">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs font-serif uppercase tracking-widest text-forkast-forest mb-2">
                 Week starting
               </label>
               <input
                 type="date"
                 value={weekStart}
                 onChange={e => handleWeekStartChange(e.target.value)}
-                className="w-full px-3 py-1 text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-1 text-sm border-b-2 border-forkast-ink bg-transparent font-hand text-base focus:outline-none focus:border-forkast-crimson"
                 data-testid="plan-week-start"
               />
             </div>
 
             {/* Meal Type Filters */}
             <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs font-serif uppercase tracking-widest text-forkast-ink mb-2">
                 Meal Types
               </label>
               <div className="flex flex-wrap gap-2">
@@ -595,11 +608,16 @@ export default function PlannerPage() {
                         );
                       }
                     }}
-                    className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                    className={`px-3 py-1 text-sm rounded-full transition-colors font-serif wobble ${
                       mealTypes.includes(type)
-                        ? 'bg-blue-100 text-blue-700 border border-blue-300'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        ? 'text-forkast-paper'
+                        : 'text-forkast-ink hover:bg-muted'
                     }`}
+                    style={
+                      mealTypes.includes(type)
+                        ? { background: 'var(--forkast-ink)', border: '1.3px solid var(--forkast-ink)' }
+                        : { border: '1.3px solid var(--forkast-ink)' }
+                    }
                   >
                     {type}
                   </button>
@@ -609,7 +627,7 @@ export default function PlannerPage() {
 
             {/* Dietary Filters */}
             <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs font-serif uppercase tracking-widest text-forkast-forest mb-2">
                 Dietary Preferences
               </label>
               <div className="flex flex-wrap gap-2">
@@ -624,11 +642,16 @@ export default function PlannerPage() {
                           : [...dietaryTypes, diet];
                         handleDietaryChange(updated);
                       }}
-                      className={`px-3 py-1 text-sm rounded-md transition-colors ${
-                        dietaryTypes.includes(diet)
-                          ? 'bg-emerald-100 text-emerald-700 border border-emerald-300'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      className={`px-3 py-1 text-sm rounded-full transition-colors font-serif wobble ${
+                        isSelected
+                          ? 'text-forkast-paper'
+                          : 'text-forkast-forest hover:bg-muted'
                       }`}
+                      style={
+                        isSelected
+                          ? { background: 'var(--forkast-forest)', border: '1.3px solid var(--forkast-forest)' }
+                          : { border: '1.3px solid var(--forkast-forest)' }
+                      }
                     >
                       {diet}
                     </button>
@@ -639,7 +662,7 @@ export default function PlannerPage() {
 
             {/* Meal Count Selector */}
             <div className="w-32">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs font-serif uppercase tracking-widest text-forkast-ink mb-2">
                 Meal Count
               </label>
               <input
@@ -663,9 +686,9 @@ export default function PlannerPage() {
               {filtersActive && (
                 <button
                   onClick={handleClearFilters}
-                  className="px-3 py-2 text-sm text-blue-700 hover:underline whitespace-nowrap"
+                  className="px-3 py-2 text-sm font-serif text-forkast-crimson hover:underline whitespace-nowrap"
                 >
-                  Clear filters
+                  clear filters
                 </button>
               )}
             </div>
@@ -698,12 +721,13 @@ export default function PlannerPage() {
         </div>
 
         {/* Footer Actions */}
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 shadow-lg z-30 sm:relative sm:bg-transparent sm:border-0 sm:shadow-none sm:p-0">
-          <div className="max-w-7xl mx-auto flex justify-end gap-4">
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-forkast-paper border-t border-forkast-rule shadow-lg z-30 sm:relative sm:bg-transparent sm:border-0 sm:shadow-none sm:p-0">
+          <div className="flex justify-end gap-4">
             <button
               onClick={handleSavePlan}
               disabled={isSaving}
-              className="flex-1 sm:flex-none px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed shadow-sm transition-colors text-lg flex items-center justify-center gap-2"
+              className="flex-1 sm:flex-none px-6 py-3 bg-cookbook-terracotta text-cookbook-cream font-hand rounded hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-opacity text-xl flex items-center justify-center gap-2 wobble"
+              style={{ transform: 'rotate(-1deg)' }}
             >
               {isSaving ? (
                 <>
@@ -711,12 +735,12 @@ export default function PlannerPage() {
                   Saving...
                 </>
               ) : (
-                'Save Plan'
+                'Save Plan →'
               )}
             </button>
           </div>
         </div>
       </div>
-    </div>
+    </PaperPage>
   );
 }

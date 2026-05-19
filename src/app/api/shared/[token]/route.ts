@@ -1,17 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-// Use service role client to bypass RLS for public access
-const supabaseServiceRole = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.EDGE_SERVICE_ROLE_KEY!,
-);
+function getSupabaseAdmin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.EDGE_SERVICE_ROLE_KEY!,
+  );
+}
 
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ token: string }> },
 ) {
   try {
+    const supabase = getSupabaseAdmin();
     const { token } = await params;
 
     if (!token) {
@@ -19,7 +21,7 @@ export async function GET(
     }
 
     // Find the share record by token
-    const { data: share, error: shareError } = await supabaseServiceRole
+    const { data: share, error: shareError } = await supabase
       .from('meal_plan_shares')
       .select(
         `
@@ -49,7 +51,7 @@ export async function GET(
     }
 
     // Get planned meals for this meal plan
-    const { data: plannedMeals, error: mealsError } = await supabaseServiceRole
+    const { data: plannedMeals, error: mealsError } = await supabase
       .from('planned_meals')
       .select(
         `

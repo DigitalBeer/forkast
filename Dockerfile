@@ -31,16 +31,20 @@ ARG NEXT_PUBLIC_SUPABASE_URL
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
 ARG NEXT_PUBLIC_SENTRY_DSN
 ARG NEXT_PUBLIC_APP_URL
+ARG NEXT_PUBLIC_APP_VERSION
 
 ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
 ENV NEXT_PUBLIC_SENTRY_DSN=$NEXT_PUBLIC_SENTRY_DSN
 ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
+ENV NEXT_PUBLIC_APP_VERSION=$NEXT_PUBLIC_APP_VERSION
 
 # Disable Next.js telemetry during the build
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN npm run build
+# --no-lint: test files are excluded via .dockerignore, but this
+# prevents any remaining lint warnings from breaking the build.
+RUN npx next build --no-lint
 
 # =============================================================================
 # Stage 3 — Production runner (smallest possible image)

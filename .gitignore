@@ -65,6 +65,7 @@ e2e/.auth/
 *.temp
 *.cache
 *.bak
+*.tar
 
 # Log files
 *.log
@@ -90,6 +91,8 @@ temp/
 docs/
 web-bundles/
 .agent/
+.agents/
+.zencoder/
 _bmad/
 _bmad-output/
 test-results/
@@ -101,6 +104,7 @@ test-results/
 .swc/
 coverage/
 playwright-report/
+scripts/
 
 # Generated reports
 eslint-report.*

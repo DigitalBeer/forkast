@@ -1,0 +1,31 @@
+# Enforce LF line endings for cross-platform compatibility
+# This prevents CRLF issues when deploying from Windows to Linux containers
+
+* text=auto eol=lf
+
+# Explicitly declare files that should always use LF
+*.sh text eol=lf
+*.ps1 text eol=lf
+Dockerfile text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.js text eol=lf
+*.jsx text eol=lf
+*.mjs text eol=lf
+*.css text eol=lf
+
+# Binary files should not be normalized
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.tar binary

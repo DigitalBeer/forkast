@@ -19,6 +19,7 @@ import { RecommendedMealsCard } from '@/components/recommendations/RecommendedMe
 import { LandingPage } from '@/components/landing/LandingPage';
 import { MealImage } from '@/components/meals/MealImage';
 import { useAuthStore } from '@/store/auth';
+import { PaperPage } from '@/components/layout/PaperPage';
 import type { MealPlanData, MealPlanMeal } from '@/types/meal';
 
 interface MealPlanSummary {
@@ -41,9 +42,11 @@ export default function DashboardPage() {
   // Show loading while auth state is initializing
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <LoadingSpinner />
-      </div>
+      <PaperPage>
+        <div className="flex items-center justify-center py-32">
+          <LoadingSpinner />
+        </div>
+      </PaperPage>
     );
   }
 
@@ -100,24 +103,28 @@ function AuthenticatedDashboard() {
 
   if (planLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <LoadingSpinner />
-      </div>
+      <PaperPage>
+        <div className="flex items-center justify-center py-32">
+          <LoadingSpinner />
+        </div>
+      </PaperPage>
     );
   }
 
   if (planError) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <ErrorMessage
-          message={
-            planError instanceof Error
-              ? planError.message
-              : 'Failed to load dashboard'
-          }
-          onRetry={() => refetch()}
-        />
-      </div>
+      <PaperPage>
+        <div className="flex items-center justify-center py-32">
+          <ErrorMessage
+            message={
+              planError instanceof Error
+                ? planError.message
+                : 'Failed to load dashboard'
+            }
+            onRetry={() => refetch()}
+          />
+        </div>
+      </PaperPage>
     );
   }
 
@@ -147,28 +154,28 @@ function AuthenticatedDashboard() {
   // Empty state
   if (!mealPlan) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <h1 className="text-3xl font-serif font-bold text-foreground mb-8">
+      <PaperPage>
+        <div className="max-w-6xl mx-auto">
+          <h1 className="text-4xl font-hand font-bold text-forkast-ink mb-8">
             Dashboard
           </h1>
 
           <div className="flex items-center justify-center py-16">
             <div className="text-center">
               <Utensils className="w-16 h-16 text-cookbook-warm-gray/40 mx-auto mb-4" />
-              <p className="text-xl text-muted-foreground mb-6">
+              <p className="text-xl font-serif text-muted-foreground mb-6">
                 Aww, you have no plans, why not make one?
               </p>
               <Link
                 href="/planner"
-                className="px-4 py-2 bg-primary text-primary-foreground font-medium rounded-md hover:bg-primary/90 transition-colors"
+                className="px-4 py-2 bg-primary text-primary-foreground font-serif font-medium rounded-md hover:bg-primary/90 transition-colors"
               >
                 Plan New Week
               </Link>
             </div>
           </div>
         </div>
-      </div>
+      </PaperPage>
     );
   }
 
@@ -197,10 +204,10 @@ function AuthenticatedDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <PaperPage>
+      <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-serif font-bold text-foreground">
+          <h1 className="text-4xl font-hand font-bold text-forkast-ink">
             Dashboard
           </h1>
           <Link
@@ -383,7 +390,7 @@ function AuthenticatedDashboard() {
               </span>
             </div>
             <p className="text-sm text-muted-foreground">
-              Cooking tips, seasonal recipes, and updates from the BMAD
+              Cooking tips, seasonal recipes, and updates from the Forkast
               community.
             </p>
           </div>
@@ -398,6 +405,6 @@ function AuthenticatedDashboard() {
           />
         )}
       </div>
-    </div>
+    </PaperPage>
   );
 }

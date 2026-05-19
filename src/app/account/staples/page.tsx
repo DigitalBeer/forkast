@@ -5,11 +5,12 @@ import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { StaplesManager } from '@/components/plan/StaplesManager';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { PaperPage } from '@/components/layout/PaperPage';
 
 export default function ManageStaplesPage() {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <PaperPage>
+      <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <Link
@@ -50,6 +51,6 @@ export default function ManageStaplesPage() {
           </ul>
         </div>
       </div>
-    </div>
+    </PaperPage>
   );
 }

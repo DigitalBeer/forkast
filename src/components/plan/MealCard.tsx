@@ -17,12 +17,19 @@ interface MealCardProps {
   compact?: boolean;
 }
 
-export function MealCard({ meal, onRemove, onDuplicate, onCooked, onSkip, compact = false }: MealCardProps) {
+export function MealCard({
+  meal,
+  onRemove,
+  onDuplicate,
+  onCooked,
+  onSkip,
+  compact = false,
+}: MealCardProps) {
   const [{ isDragging }, drag] = useDrag(
     () => ({
       type: 'meal',
       item: meal,
-      collect: (monitor) => ({
+      collect: monitor => ({
         isDragging: monitor.isDragging(),
       }),
       end: (_item, monitor) => {
@@ -34,7 +41,7 @@ export function MealCard({ meal, onRemove, onDuplicate, onCooked, onSkip, compac
     [meal, onRemove],
   );
 
-  const lastPreparedText = meal.last_prepared 
+  const lastPreparedText = meal.last_prepared
     ? `Last made ${formatDistanceToNow(new Date(meal.last_prepared), { addSuffix: true })}`
     : 'Never made';
 
@@ -57,31 +64,40 @@ export function MealCard({ meal, onRemove, onDuplicate, onCooked, onSkip, compac
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
             {meal.meal_type && (
-              <MealTypeIcon type={meal.meal_type} size={compact ? 'sm' : 'md'} />
+              <MealTypeIcon
+                type={meal.meal_type}
+                size={compact ? 'sm' : 'md'}
+              />
             )}
-            <h4 className={`font-medium text-foreground ${
-              compact ? 'text-sm' : 'text-base'
-            }`}>
+            <h4
+              className={`font-medium text-foreground ${
+                compact ? 'text-sm' : 'text-base'
+              }`}
+            >
               {meal.name}
             </h4>
           </div>
-          
-          <MealImage
-            src={meal.image_url}
-            alt={meal.name}
-            size="thumbnail"
-            mealName={meal.name}
-            mealType={meal.meal_type}
-            className="!h-16 mt-2 rounded"
-          />
-          
-          <div className={`text-xs text-gray-500 mt-1 ${
-            compact ? 'hidden' : 'block'
-          }`}>
+
+          {meal.image_url && (
+            <MealImage
+              src={meal.image_url}
+              alt={meal.name}
+              size="thumbnail"
+              mealName={meal.name}
+              mealType={meal.meal_type}
+              className="!h-8 !w-8 mt-1 rounded-full"
+            />
+          )}
+
+          <div
+            className={`text-xs text-gray-500 mt-1 ${
+              compact ? 'hidden' : 'block'
+            }`}
+          >
             {lastPreparedText}
           </div>
         </div>
-        
+
         <div className="flex flex-col space-y-1 ml-2">
           {/* Action buttons row */}
           <div className="flex space-x-1">
@@ -128,7 +144,7 @@ export function MealCard({ meal, onRemove, onDuplicate, onCooked, onSkip, compac
               </button>
             )}
           </div>
-          
+
           {/* Cooked and Skip buttons row */}
           {(onCooked || onSkip) && (
             <div className="flex space-x-1">
@@ -176,9 +192,9 @@ export function MealCard({ meal, onRemove, onDuplicate, onCooked, onSkip, compac
               )}
             </div>
           )}
-          
+
           {/* View meal button */}
-          <Link 
+          <Link
             href={`/meals/${meal.id}`}
             className="text-blue-500 hover:text-blue-700 transition-colors"
             title="View meal details"

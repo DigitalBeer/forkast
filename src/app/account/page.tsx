@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { Crown, CreditCard, Calendar, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
+import { PaperPage } from '@/components/layout/PaperPage';
 
 interface SubscriptionData {
   subscription_status: 'free' | 'premium';
@@ -64,12 +65,14 @@ export default function AccountPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading account...</p>
+      <PaperPage>
+        <div className="flex items-center justify-center py-32">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-forkast-crimson mx-auto"></div>
+            <p className="mt-4 text-forkast-ink-soft font-serif">Loading account...</p>
+          </div>
         </div>
-      </div>
+      </PaperPage>
     );
   }
 
@@ -79,9 +82,9 @@ export default function AccountPage() {
     : null;
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+    <PaperPage>
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">Account Settings</h1>
+        <h1 className="text-3xl font-hand font-bold text-forkast-ink mb-8">Account Settings</h1>
 
         {/* Subscription Status Card */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
@@ -293,6 +296,6 @@ export default function AccountPage() {
           </div>
         </div>
       </div>
-    </div>
+    </PaperPage>
   );
 }

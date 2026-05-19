@@ -3,7 +3,7 @@ import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 interface SaveMealPlanRequest {
   startDate: string; // ISO date string
-  endDate: string;   // ISO date string
+  endDate: string; // ISO date string
   meals: {
     [date: string]: {
       breakfast?: { id: string; name: string };
@@ -22,28 +22,21 @@ export async function POST(req: NextRequest) {
     if (!startDate || !endDate) {
       return NextResponse.json(
         { error: 'Missing required fields: startDate and endDate' },
-        { status: 400 }
-      );
-    }
-
-    if (!meals || Object.keys(meals).length === 0) {
-      return NextResponse.json(
-        { error: 'Meal plan must contain at least one meal' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Initialize Supabase client with user session
     const supabase = await createSupabaseServerClient();
-    
+
     // Get authenticated user
-    const { data: { session }, error: authError } = await supabase.auth.getSession();
-    
+    const {
+      data: { session },
+      error: authError,
+    } = await supabase.auth.getSession();
+
     if (authError || !session?.user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     const user = session.user;
 
@@ -77,17 +70,55 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Validate meal ownership before creating the plan
+    const mealIds = plannedMeals
+      .map(m => m.meal_id)
+      .filter((id): id is string => Boolean(id));
+
+    const uniqueMealIds = [...new Set(mealIds)];
+
+    if (uniqueMealIds.length > 0) {
+      const { data: ownedMeals, error: ownershipError } = await supabase
+        .from('meals')
+        .select('id')
+        .eq('user_id', user.id)
+        .in('id', uniqueMealIds);
+
+      if (ownershipError) {
+        console.error('Error validating meal ownership:', ownershipError);
+        return NextResponse.json(
+          { error: 'Failed to validate meal ownership' },
+          { status: 500 },
+        );
+      }
+
+      const ownedIds = new Set((ownedMeals || []).map(m => String(m.id)));
+      const invalidIds = uniqueMealIds.filter(id => !ownedIds.has(id));
+
+      if (invalidIds.length > 0) {
+        return NextResponse.json(
+          {
+            error: 'Some meals do not belong to you',
+            invalidMealIds: invalidIds,
+          },
+          { status: 403 },
+        );
+      }
+    }
+
     // First check if tables exist
     const { data: _tables, error: tablesError } = await supabase
       .from('meal_plans')
       .select('id')
       .limit(1);
-    
+
     if (tablesError) {
       console.error('Table does not exist or is not accessible:', tablesError);
       return NextResponse.json(
-        { error: `Database table issue: ${tablesError.message}. Please run 'supabase db push' to apply migrations.` },
-        { status: 500 }
+        {
+          error: `Database table issue: ${tablesError.message}. Please run 'supabase db push' to apply migrations.`,
+        },
+        { status: 500 },
       );
     }
 
@@ -102,11 +133,16 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (planError) {
-      console.error('Error creating meal plan:', JSON.stringify(planError, null, 2));
+      console.error(
+        'Error creating meal plan:',
+        JSON.stringify(planError, null, 2),
+      );
       console.error('Plan error details:', planError);
       return NextResponse.json(
-        { error: `Failed to create meal plan: ${planError.message || planError.code || 'Unknown error'}` },
-        { status: 500 }
+        {
+          error: `Failed to create meal plan: ${planError.message || planError.code || 'Unknown error'}`,
+        },
+        { status: 500 },
       );
     }
 
@@ -122,26 +158,33 @@ export async function POST(req: NextRequest) {
         .insert(mealsWithPlanId);
 
       if (mealsError) {
-        console.error('Error inserting planned meals:', JSON.stringify(mealsError, null, 2));
+        console.error(
+          'Error inserting planned meals:',
+          JSON.stringify(mealsError, null, 2),
+        );
         // Try to clean up the meal plan if meals failed
         await supabase.from('meal_plans').delete().eq('id', mealPlan.id);
         return NextResponse.json(
-          { error: `Failed to save meals: ${mealsError.message || mealsError.code || 'Unknown error'}` },
-          { status: 500 }
+          {
+            error: `Failed to save meals: ${mealsError.message || mealsError.code || 'Unknown error'}`,
+          },
+          { status: 500 },
         );
       }
     }
 
-    return NextResponse.json({
-      message: 'Meal plan saved successfully',
-      mealPlanId: mealPlan.id,
-    }, { status: 201 });
-
+    return NextResponse.json(
+      {
+        message: 'Meal plan saved successfully',
+        mealPlanId: mealPlan.id,
+      },
+      { status: 201 },
+    );
   } catch (error) {
     console.error('Error in POST /api/meal-plans:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -150,15 +193,15 @@ export async function POST(req: NextRequest) {
 export async function GET() {
   try {
     const supabase = await createSupabaseServerClient();
-    
+
     // Get authenticated user
-    const { data: { session }, error: authError } = await supabase.auth.getSession();
-    
+    const {
+      data: { session },
+      error: authError,
+    } = await supabase.auth.getSession();
+
     if (authError || !session?.user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     const user = session.user;
 
@@ -179,7 +222,7 @@ export async function GET() {
       console.error('Error fetching meal plan:', planError);
       return NextResponse.json(
         { error: 'Failed to fetch meal plan' },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -190,7 +233,8 @@ export async function GET() {
     // Get planned meals for this plan
     const { data: plannedMeals, error: mealsError } = await supabase
       .from('planned_meals')
-      .select(`
+      .select(
+        `
         *,
         meals:meal_id (
           id,
@@ -198,31 +242,45 @@ export async function GET() {
           meal_type,
           image_url
         )
-      `)
+      `,
+      )
       .eq('meal_plan_id', mealPlan.id);
 
     if (mealsError) {
       console.error('Error fetching planned meals:', mealsError);
       return NextResponse.json(
         { error: 'Failed to fetch planned meals' },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
     // Transform to frontend format
-    const meals: Record<string, {
-      breakfast?: { id: string; name: string; type: string; thumbnail?: string };
-      lunch?: { id: string; name: string; type: string; thumbnail?: string };
-      dinner?: { id: string; name: string; type: string; thumbnail?: string };
-    }> = {};
+    const meals: Record<
+      string,
+      {
+        breakfast?: {
+          id: string;
+          name: string;
+          type: string;
+          thumbnail?: string;
+        };
+        lunch?: { id: string; name: string; type: string; thumbnail?: string };
+        dinner?: { id: string; name: string; type: string; thumbnail?: string };
+      }
+    > = {};
 
     for (const pm of plannedMeals || []) {
       const date = pm.planned_for_date;
       if (!meals[date]) {
         meals[date] = {};
       }
-      
-      const meal = pm.meals as { id: number; name: string; meal_type: string; image_url?: string };
+
+      const meal = pm.meals as {
+        id: number;
+        name: string;
+        meal_type: string;
+        image_url?: string;
+      };
       meals[date][pm.meal_type as 'breakfast' | 'lunch' | 'dinner'] = {
         id: meal.id.toString(),
         name: meal.name,
@@ -231,19 +289,21 @@ export async function GET() {
       };
     }
 
-    return NextResponse.json({
-      id: mealPlan.id.toString(),
-      startDate: mealPlan.start_date,
-      endDate: mealPlan.end_date,
-      weekStart: mealPlan.start_date,
-      meals,
-    }, { status: 200 });
-
+    return NextResponse.json(
+      {
+        id: mealPlan.id.toString(),
+        startDate: mealPlan.start_date,
+        endDate: mealPlan.end_date,
+        weekStart: mealPlan.start_date,
+        meals,
+      },
+      { status: 200 },
+    );
   } catch (error) {
     console.error('Error in GET /api/meal-plans:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

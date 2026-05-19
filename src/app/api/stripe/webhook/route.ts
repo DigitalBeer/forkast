@@ -4,11 +4,12 @@ import { stripe, STRIPE_WEBHOOK_SECRET } from '@/lib/stripe';
 import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
 
-// Supabase admin client for webhook operations
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.EDGE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+function getSupabaseAdmin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.EDGE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  );
+}
 
 export async function POST(req: NextRequest) {
   const body = await req.text();
@@ -17,7 +18,7 @@ export async function POST(req: NextRequest) {
   if (!signature) {
     return NextResponse.json(
       { error: 'No signature provided' },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -27,17 +28,18 @@ export async function POST(req: NextRequest) {
     event = stripe.webhooks.constructEvent(
       body,
       signature,
-      STRIPE_WEBHOOK_SECRET
+      STRIPE_WEBHOOK_SECRET,
     );
   } catch (err) {
     console.error('Webhook signature verification failed:', err);
     return NextResponse.json(
       { error: 'Webhook signature verification failed' },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
   try {
+    const supabaseAdmin = getSupabaseAdmin();
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
@@ -79,13 +81,15 @@ export async function POST(req: NextRequest) {
 
         const status = subscription.status === 'active' ? 'premium' : 'free';
 
-        const periodEnd = (subscription as unknown as { current_period_end?: number }).current_period_end;
-        
+        const periodEnd = (
+          subscription as unknown as { current_period_end?: number }
+        ).current_period_end;
+
         await supabaseAdmin
           .from('profiles')
           .update({
             subscription_status: status,
-            subscription_current_period_end: periodEnd 
+            subscription_current_period_end: periodEnd
               ? new Date(periodEnd * 1000).toISOString()
               : null,
           })
@@ -150,7 +154,7 @@ export async function POST(req: NextRequest) {
     console.error('Error processing webhook:', error);
     return NextResponse.json(
       { error: 'Webhook processing failed' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
