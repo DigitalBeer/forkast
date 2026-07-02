@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  quality:
+    name: Quality gate
+    uses: DigitalBeer/ci-templates/.github/workflows/node-ci.yml@main
+    with:
+      node-version: '20'
+      package-manager: npm
+      dockerfile: Dockerfile
+    secrets: inherit
+
+  publish:
+    name: Publish image
+    needs: quality
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    uses: DigitalBeer/ci-templates/.github/workflows/docker-publish.yml@main
+    with:
+      image-name: forkast # -> ghcr.io/digitalbeer/forkast
+      dockerfile: Dockerfile
+      platforms: linux/amd64
+      # NEXT_PUBLIC_* are inlined into the client bundle at BUILD time, so the
+      # published image needs them here. They are public values (not secrets),
+      # so they are read from repo VARIABLES. Set them once with:
+      #   gh variable set NEXT_PUBLIC_SUPABASE_URL --body "https://<ref>.supabase.co"
+      #   gh variable set NEXT_PUBLIC_SUPABASE_ANON_KEY --body "<anon-key>"
+      #   gh variable set NEXT_PUBLIC_APP_URL --body "https://<prod-url>"
+      #   gh variable set NEXT_PUBLIC_SENTRY_DSN --body "<dsn>"   # optional
+      build-args: |
+        NEXT_PUBLIC_SUPABASE_URL=${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+        NEXT_PUBLIC_SENTRY_DSN=${{ vars.NEXT_PUBLIC_SENTRY_DSN }}
+        NEXT_PUBLIC_APP_URL=${{ vars.NEXT_PUBLIC_APP_URL }}
+        NEXT_PUBLIC_APP_VERSION=${{ vars.NEXT_PUBLIC_APP_VERSION }}
+    secrets: inherit

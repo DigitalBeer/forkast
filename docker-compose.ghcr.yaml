@@ -1,0 +1,38 @@
+# docker-compose.ghcr.yaml
+#
+# Deploy target (Unraid). Pulls the pre-built image from GHCR — nothing is built
+# on the host. The single shared Watchtower instance (see any project's
+# docker-compose.watchtower.yaml) picks this up via the label below and keeps it
+# current by pulling new :latest digests and recreating the container.
+#
+# Usage on the host (once):
+#   docker compose -f docker-compose.ghcr.yaml --env-file .env.docker up -d
+#
+# Runtime-only secrets come from .env.docker on the host. The NEXT_PUBLIC_* vars
+# are already baked into the image at build time (see .github/workflows/ci.yml),
+# so they are NOT needed here.
+
+services:
+  forkast:
+    image: ghcr.io/digitalbeer/forkast:latest
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
+    ports:
+      - '${HOST_PORT:-3000}:3000'
+    environment:
+      NODE_ENV: production
+      # Supabase (server-side admin access)
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      EDGE_SERVICE_ROLE_KEY: ${EDGE_SERVICE_ROLE_KEY}
+      # Stripe
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_PRICE_ID: ${STRIPE_PRICE_ID}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+    restart: unless-stopped
+    healthcheck:
+      test:
+        ['CMD-SHELL', 'wget -qO- http://localhost:3000/api/health || exit 1']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
