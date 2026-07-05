@@ -13,7 +13,7 @@ permissions:
 jobs:
   quality:
     name: Quality gate
-    uses: DigitalBeer/ci-templates/.github/workflows/node-ci.yml@main
+    uses: DigitalBeer/ci-templates/.github/workflows/node-ci.yml@master
     with:
       node-version: '20'
       package-manager: npm
@@ -24,7 +24,7 @@ jobs:
     name: Publish image
     needs: quality
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    uses: DigitalBeer/ci-templates/.github/workflows/docker-publish.yml@main
+    uses: DigitalBeer/ci-templates/.github/workflows/docker-publish.yml@master
     with:
       image-name: forkast # -> ghcr.io/digitalbeer/forkast
       dockerfile: Dockerfile
