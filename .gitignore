@@ -97,7 +97,6 @@ _bmad/
 _bmad-output/
 test-results/
 .claude/
-.github/
 .vscode/
 .next/
 .ruff_cache/

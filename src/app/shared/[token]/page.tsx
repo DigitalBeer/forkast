@@ -239,9 +239,6 @@ export default function SharedMealPlanPage({
             This meal plan was shared from{' '}
             <span className="font-medium text-gray-700">Forkast</span>
           </p>
-          <p className="text-xs text-gray-400 mt-1">
-            Create your own meal plans at bmad-meal-planner.com
-          </p>
         </div>
       </div>
     </div>
