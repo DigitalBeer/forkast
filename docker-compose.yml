@@ -13,8 +13,8 @@
 #   file up automatically if present. Requires Docker Compose v2.24+.
 
 services:
-  meal-planner:
-    image: ${DOCKER_IMAGE_NAME:-meal-planner}:${DOCKER_IMAGE_TAG:-latest}
+  forkast:
+    image: ${DOCKER_IMAGE_NAME:-forkast}:${DOCKER_IMAGE_TAG:-latest}
     build:
       context: .
       # NEXT_PUBLIC_* vars must be passed at BUILD time — they are inlined

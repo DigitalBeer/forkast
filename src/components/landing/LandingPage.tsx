@@ -21,7 +21,7 @@ export function LandingPage() {
             </h1>
 
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-10">
-              BMAD helps you plan delicious meals, organize your shopping list,
+              Forkast helps you plan delicious meals, organize your shopping list,
               and save time in the kitchen. Start planning smarter today.
             </p>
 
@@ -120,7 +120,7 @@ export function LandingPage() {
             Ready to Start Planning?
           </h2>
           <p className="text-lg text-muted-foreground mb-8">
-            Join thousands of home cooks who have simplified their meal planning with BMAD.
+            Join thousands of home cooks who have simplified their meal planning with Forkast.
           </p>
           <Link
             href="/signup"
@@ -137,7 +137,7 @@ export function LandingPage() {
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <ChefHat className="w-6 h-6 text-primary" />
-            <span className="font-serif font-semibold text-foreground">BMAD</span>
+            <span className="font-serif font-semibold text-foreground">Forkast</span>
           </div>
           <p className="text-sm text-muted-foreground">
             © {new Date().getFullYear()} Forkast. All rights reserved.
