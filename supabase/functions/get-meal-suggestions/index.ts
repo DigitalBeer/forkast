@@ -126,10 +126,18 @@ async function getSupabase(req: Request): Promise<SupabaseClient | null> {
     return null;
   }
 
-  // Use service role key if available (bypasses RLS), otherwise use anon with auth header
+  const authHeader = req.headers.get('Authorization') ?? '';
+  console.log(
+    `[DEBUG] Auth header present: ${!!authHeader}, length: ${authHeader.length}`,
+  );
+
+  // Use service role key if available (bypasses RLS); always forward the caller's JWT
+  // so auth.getUser(token) can verify the requesting user's identity.
   if (serviceRole) {
     console.log('[DEBUG] Using service role key for database access');
-    return createClient(url, serviceRole, { global: { fetch } });
+    return createClient(url, serviceRole, {
+      global: { fetch, headers: { Authorization: authHeader } },
+    });
   }
 
   if (!anon) {
@@ -137,13 +145,8 @@ async function getSupabase(req: Request): Promise<SupabaseClient | null> {
     return null;
   }
 
-  const authHeader = req.headers.get('Authorization') ?? '';
-  console.log(
-    `[DEBUG] Auth header present: ${!!authHeader}, length: ${authHeader.length}`,
-  );
   return createClient(url, anon, {
-    global: { fetch },
-    headers: { Authorization: authHeader },
+    global: { fetch, headers: { Authorization: authHeader } },
   });
 }
 
@@ -238,12 +241,17 @@ serve(async req => {
       .catch(() => ({}) as FilterRequest);
     const supabase = await getSupabase(req);
 
-    // Authenticate user upfront — required for data isolation
+    // Authenticate user upfront — required for data isolation.
+    // Extract the JWT and pass it explicitly so auth.getUser works with both
+    // service-role clients (which have no implicit session) and anon clients.
+    const authHeader = req.headers.get('Authorization') ?? '';
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
     let userId: string | null = null;
     try {
       if (supabase) {
-        const { data: userData, error: authError } =
-          await supabase.auth.getUser();
+        const { data: userData, error: authError } = token
+          ? await supabase.auth.getUser(token)
+          : await supabase.auth.getUser();
         if (authError || !userData?.user) {
           return new Response(JSON.stringify({ error: 'Unauthorized' }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -296,8 +304,7 @@ serve(async req => {
         const { data, error } = await supabase
           .from('meals')
           .select('id, name, image_url')
-          .eq('user_id', userId)
-          .limit(10);
+          .eq('user_id', userId);
 
         if (!error && data) {
           legacyMeals = data.map(
@@ -361,12 +368,9 @@ serve(async req => {
     const startDate =
       requestBody.startDate || new Date().toISOString().split('T')[0];
     const days = requestBody.days || 7;
-    const mealTypes = requestBody.filters?.mealTypes || [
-      'breakfast',
-      'lunch',
-      'dinner',
-    ];
+    const mealTypes = requestBody.filters?.mealTypes || [];
     const dietaryTypes = requestBody.filters?.dietaryTypes || [];
+    const filterByMealType = mealTypes.length > 0;
 
     // Fetch real meals from database
     let dbMeals: Array<{
@@ -417,16 +421,20 @@ serve(async req => {
     ]);
     console.log('[DEBUG] Requested meal types:', mealTypes);
     const filteredMeals = mealsToUse.filter(meal => {
-      // Filter by meal type (case-insensitive comparison)
-      const mealTypeLower = meal.meal_type?.toLowerCase();
-      const matchesMealType = mealTypes.some(
-        type => type.toLowerCase() === mealTypeLower,
-      );
-      if (!matchesMealType) return false;
+      // Filter by meal type only when an explicit filter was provided
+      if (filterByMealType) {
+        const mealTypeLower = meal.meal_type?.toLowerCase();
+        const matchesMealType = mealTypes.some(
+          type => type.toLowerCase() === mealTypeLower,
+        );
+        if (!matchesMealType) return false;
+      }
 
-      // Filter by dietary restrictions
+      // Filter by dietary restrictions (case-insensitive)
       if (dietaryTypes.length === 0) return true;
-      return dietaryTypes.some(dietType => meal.tags.includes(dietType));
+      return dietaryTypes.some(dietType =>
+        meal.tags.some(tag => tag.toLowerCase() === dietType.toLowerCase()),
+      );
     });
     console.log('[DEBUG] Filtered to', filteredMeals.length, 'meals');
 

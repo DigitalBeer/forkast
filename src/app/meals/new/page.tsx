@@ -34,7 +34,7 @@ export default function NewMealPage() {
 
   return (
     <PaperPage>
-      <div className="max-w-lg">
+      <div className="max-w-lg mx-auto">
         <h1 className="mb-4 text-2xl font-hand font-bold text-forkast-ink">Add New Meal</h1>
         {loading ? (
           <div className="p-8">Loading...</div>

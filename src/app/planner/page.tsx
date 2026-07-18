@@ -373,6 +373,57 @@ export default function PlannerPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, dietaryTypes, mealTypes, mealCount, weekStart, profileDietaryPrefs]);
 
+  // Handle addMeal param: auto-place a meal from the Meals page into the first available slot
+  const addMealHandledRef = useRef(false);
+  useEffect(() => {
+    if (addMealHandledRef.current) return;
+    const addMealFlag = searchParams.get('addMeal');
+    if (!addMealFlag) return;
+
+    const stored = sessionStorage.getItem('addMealToPlan');
+    if (!stored) return;
+
+    let meal: Meal;
+    try {
+      meal = JSON.parse(stored) as Meal;
+    } catch {
+      sessionStorage.removeItem('addMealToPlan');
+      return;
+    }
+
+    addMealHandledRef.current = true;
+    sessionStorage.removeItem('addMealToPlan');
+
+    const rawType = meal.meal_type;
+    const slotType: MealType =
+      rawType === 'Breakfast' || rawType === 'Lunch' || rawType === 'Dinner'
+        ? rawType
+        : 'Dinner';
+
+    const days: string[] = [];
+    for (let i = 0; i < 7; i++) {
+      days.push(format(addDays(new Date(weekStart), i), 'yyyy-MM-dd'));
+    }
+
+    for (const day of days) {
+      if (!meals[day]?.[slotType]) {
+        setMeals(prev => ({
+          ...prev,
+          [day]: { ...prev[day], [slotType]: meal },
+        }));
+        toast.success(
+          `Added "${meal.name}" to ${format(new Date(day), 'EEEE')} ${slotType}`,
+        );
+        const params = new URLSearchParams(searchParams.toString());
+        params.delete('addMeal');
+        router.replace(`/planner?${params.toString()}`, { scroll: false });
+        return;
+      }
+    }
+
+    toast.error(`No empty ${slotType} slot available this week for "${meal.name}"`);
+  }, [searchParams, weekStart, meals, router]);
+
   const handleMealDrop = (date: string, mealType: MealType, meal: Meal) => {
     setMeals(prev => ({
       ...prev,

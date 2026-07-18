@@ -22,7 +22,7 @@ export async function GET() {
       .from("profiles")
       .select("dietary_preferences, disliked_ingredients, meal_type_preferences, onboarding_completed")
       .eq("id", user.id)
-      .single();
+      .maybeSingle();
 
     if (profileError) {
       console.error(`[${requestId}] Error fetching profile:`, profileError);
