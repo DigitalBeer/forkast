@@ -48,8 +48,15 @@ export function useMeals() {
     }
   };
 
-  function addMealToPlan(_meal: Meal) {
-    // Integration placeholder – will be implemented in plan context
+  function addMealToPlan(meal: Meal) {
+    const today = new Date();
+    const day = today.getDay();
+    const mondayOffset = day === 0 ? -6 : 1 - day;
+    const monday = new Date(today);
+    monday.setDate(today.getDate() + mondayOffset);
+    const weekStart = monday.toISOString().split('T')[0];
+    sessionStorage.setItem('addMealToPlan', JSON.stringify(meal));
+    window.location.href = `/planner?start=${weekStart}&addMeal=1`;
   }
 
   return {

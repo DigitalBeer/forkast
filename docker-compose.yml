@@ -9,8 +9,7 @@
 #
 # Local testing with auth:
 #   Create .env.docker.local (see .env.docker.local.example) to override
-#   NEXT_PUBLIC_APP_URL to http://localhost:3000. Docker Compose picks this
-#   file up automatically if present. Requires Docker Compose v2.24+.
+#   runtime env vars. Docker Compose picks this file up automatically if present.
 
 services:
   forkast:
@@ -27,10 +26,6 @@ services:
         NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN}
         NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
         NEXT_PUBLIC_APP_VERSION: ${NEXT_PUBLIC_APP_VERSION:-0.1.0}
-      # Optional local overrides for build-time args (Docker Compose v2.24+)
-      env_file:
-        - path: .env.docker.local
-          required: false
     ports:
       - '${HOST_PORT:-3000}:3000'
     # Runtime-only secrets — these are never baked into the image.

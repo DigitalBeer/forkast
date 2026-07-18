@@ -100,7 +100,8 @@ export default function PlanViewPage() {
               <button
                 type="button"
                 onClick={() => setIsShareModalOpen(true)}
-                className="flex items-center gap-1 px-4 py-2 bg-card text-foreground font-medium rounded-md border border-border hover:bg-muted transition-colors"
+                className="flex items-center gap-1 px-4 py-2 font-serif text-forkast-ink rounded wobble transition-colors hover:bg-muted"
+                style={{ border: '1.3px solid var(--forkast-ink)' }}
               >
                 <Share2 className="w-4 h-4" />
                 Share
@@ -109,20 +110,23 @@ export default function PlanViewPage() {
                 type="button"
                 onClick={handlePrint}
                 disabled={!canPrint}
-                className="px-4 py-2 bg-card text-foreground font-medium rounded-md border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-4 py-2 font-serif text-forkast-ink rounded wobble transition-colors hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ border: '1.3px solid var(--forkast-ink)' }}
                 data-testid="print-meal-plan"
               >
                 Print
               </button>
               <Link
                 href="/meal-plans/history"
-                className="px-4 py-2 bg-card text-foreground font-medium rounded-md border border-border hover:bg-muted transition-colors"
+                className="px-4 py-2 font-serif text-forkast-ink rounded wobble transition-colors hover:bg-muted"
+                style={{ border: '1.3px solid var(--forkast-ink)' }}
               >
                 View History
               </Link>
               <Link
                 href="/planner"
-                className="px-4 py-2 bg-primary text-primary-foreground font-medium rounded-md hover:bg-primary/90 transition-colors"
+                className="px-4 py-2 font-serif text-forkast-paper rounded wobble transition-opacity hover:opacity-90"
+                style={{ background: 'var(--forkast-ink)' }}
               >
                 Plan New Week
               </Link>
@@ -137,8 +141,8 @@ export default function PlanViewPage() {
               if (!hasMeals) return null;
 
               return (
-                <div key={date} className="bg-card rounded-xl shadow-sm border border-border p-6">
-                  <h2 className="text-xl font-serif font-semibold text-foreground mb-4">
+                <div key={date} className="rounded wobble p-5" style={{ background: 'rgba(168,50,50,0.04)', border: '1.4px solid var(--forkast-rule)' }}>
+                  <h2 className="text-xl font-hand font-bold text-forkast-ink mb-4">
                     {format(parseISO(date), 'EEEE, MMMM d')}
                   </h2>
                   
@@ -191,7 +195,7 @@ export default function PlanViewPage() {
 
 function MealCard({ meal, mealType }: { meal: MealPlanMeal; mealType: string }) {
   return (
-    <div className="border border-border rounded-lg p-4 hover:border-cookbook-warm-gray/40 transition-colors">
+    <div className="rounded p-4 wobble transition-colors" style={{ border: '1px solid var(--forkast-rule)' }}>
       <div className="flex items-start gap-3">
         <MealImage
           src={meal.thumbnail}
@@ -204,11 +208,11 @@ function MealCard({ meal, mealType }: { meal: MealPlanMeal; mealType: string }) 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 mb-1">
             <MealTypeIcon type={mealType} size="sm" />
-            <p className="text-xs font-medium text-cookbook-warm-gray uppercase tracking-wide">
+            <p className="text-xs font-serif text-forkast-forest uppercase tracking-widest">
               {mealType}
             </p>
           </div>
-          <h3 className="text-base font-semibold text-foreground truncate">
+          <h3 className="text-base font-hand font-bold text-forkast-ink truncate">
             {meal.name}
           </h3>
         </div>

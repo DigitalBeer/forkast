@@ -98,6 +98,7 @@ _bmad-output/
 test-results/
 .claude/
 .vscode/
+.switchboard/
 .next/
 .ruff_cache/
 .swc/

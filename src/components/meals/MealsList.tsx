@@ -183,7 +183,10 @@ export function MealsList() {
             meal={meal}
             onDelete={() => setMealToDelete(meal)}
             onEdit={() => router.push(`/meals/${meal.id}/edit`)}
-            onAddToPlan={() => addMealToPlan(meal)}
+            onAddToPlan={() => {
+              toast.success(`Opening planner to add "${meal.name}"`);
+              addMealToPlan(meal);
+            }}
             onDuplicate={() => handleDuplicate(meal)}
           />
         ))}

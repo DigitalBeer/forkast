@@ -20,6 +20,7 @@
     "test:shopping-list-api": "npm run test:shopping-list:api",
     "diagnostic": "node -e \"console.log('npm script execution works')\"",
     "seed:meals": "dotenv -e .env.local -- tsx scripts/seed-test-meals.ts",
+    "setup:user": "dotenv -e .env.local -- tsx scripts/setup-user-meals.ts",
     "update:meal-types": "dotenv -e .env.local -- tsx scripts/update-meal-types.ts",
     "update:last-prepared": "dotenv -e .env.local -- tsx scripts/update-last-prepared-dates.ts"
   },

@@ -32,6 +32,7 @@ const mockFromChain = (data: unknown, error: unknown = null) => {
     select: vi.fn().mockReturnThis(),
     eq: vi.fn().mockReturnThis(),
     single: vi.fn().mockResolvedValue({ data, error }),
+    maybeSingle: vi.fn().mockResolvedValue({ data, error }),
     upsert: vi.fn().mockResolvedValue({ error }),
   };
   mockSupabase.from.mockReturnValue(chain);
