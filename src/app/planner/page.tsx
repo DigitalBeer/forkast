@@ -1,12 +1,20 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { format, startOfWeek, addDays } from 'date-fns';
 import { WeeklyCalendar } from '@/components/plan/WeeklyCalendar';
 import { MealSuggestionPanel } from '@/components/plan/MealSuggestionPanel';
 import { PaperPage } from '@/components/layout/PaperPage';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogClose,
+} from '@/components/ui/dialog';
 import {
   DIETARY_TYPES,
   type Meal,
@@ -46,6 +54,17 @@ export default function PlannerPage() {
   const [error, setError] = useState<string | null>(null);
   const [hoveredSlotId, setHoveredSlotId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [planLoaded, setPlanLoaded] = useState(false);
+  const [replaceDialogMeal, setReplaceDialogMeal] = useState<{
+    meal: Meal;
+    slotType: MealType;
+  } | null>(null);
+
+  const weekDays = useMemo(() => {
+    return Array.from({ length: 7 }, (_, i) =>
+      format(addDays(new Date(weekStart), i), 'yyyy-MM-dd'),
+    );
+  }, [weekStart]);
 
   // Filter state from URL params
   const [dietaryTypes, setDietaryTypes] = useState<DietaryType[]>([]);
@@ -108,6 +127,63 @@ export default function PlannerPage() {
       })
       .catch(() => {});
   }, []);
+
+  // Load existing meal plan for the selected week
+  useEffect(() => {
+    let cancelled = false;
+
+    fetch(`/api/meal-plans?weekStart=${weekStart}`)
+      .then(r => (r.ok ? r.json() : null))
+      .then(data => {
+        if (cancelled || !data?.meals) return;
+        const loaded: MealPlan = {};
+        for (const [date, dayMeals] of Object.entries(data.meals)) {
+          const dm = dayMeals as {
+            breakfast?: { id: string; name: string; type: string; thumbnail?: string };
+            lunch?: { id: string; name: string; type: string; thumbnail?: string };
+            dinner?: { id: string; name: string; type: string; thumbnail?: string };
+          };
+          const mapped: Partial<Record<MealType, Meal>> = {};
+          if (dm.breakfast) {
+            mapped.Breakfast = {
+              id: dm.breakfast.id,
+              name: dm.breakfast.name,
+              meal_type: 'Breakfast',
+              image_url: dm.breakfast.thumbnail,
+              tags: [],
+            };
+          }
+          if (dm.lunch) {
+            mapped.Lunch = {
+              id: dm.lunch.id,
+              name: dm.lunch.name,
+              meal_type: 'Lunch',
+              image_url: dm.lunch.thumbnail,
+              tags: [],
+            };
+          }
+          if (dm.dinner) {
+            mapped.Dinner = {
+              id: dm.dinner.id,
+              name: dm.dinner.name,
+              meal_type: 'Dinner',
+              image_url: dm.dinner.thumbnail,
+              tags: [],
+            };
+          }
+          loaded[date] = mapped;
+        }
+        setMeals(loaded);
+      })
+      .catch(err => console.error('Failed to load meal plan:', err))
+      .finally(() => {
+        if (!cancelled) setPlanLoaded(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [weekStart]);
 
   const clearUndoTimer = useCallback(() => {
     if (undoTimerRef.current) {
@@ -197,6 +273,7 @@ export default function PlannerPage() {
     if (!next) return;
     _setWeekStart(next);
     setMeals({});
+    setPlanLoaded(false);
     setHoveredSlotId(null);
     updateURL(dietaryTypes, mealTypes, next);
   };
@@ -377,6 +454,7 @@ export default function PlannerPage() {
   const addMealHandledRef = useRef(false);
   useEffect(() => {
     if (addMealHandledRef.current) return;
+    if (!planLoaded) return;
     const addMealFlag = searchParams.get('addMeal');
     if (!addMealFlag) return;
 
@@ -421,8 +499,8 @@ export default function PlannerPage() {
       }
     }
 
-    toast.error(`No empty ${slotType} slot available this week for "${meal.name}"`);
-  }, [searchParams, weekStart, meals, router]);
+    setReplaceDialogMeal({ meal, slotType });
+  }, [searchParams, weekStart, meals, router, planLoaded]);
 
   const handleMealDrop = (date: string, mealType: MealType, meal: Meal) => {
     setMeals(prev => ({
@@ -792,6 +870,67 @@ export default function PlannerPage() {
           </div>
         </div>
       </div>
+
+      <Dialog open={!!replaceDialogMeal} onOpenChange={(open) => {
+        if (!open) {
+          const params = new URLSearchParams(searchParams.toString());
+          params.delete('addMeal');
+          router.replace(`/planner?${params.toString()}`, { scroll: false });
+          setReplaceDialogMeal(null);
+        }
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-serif">Replace a {replaceDialogMeal?.slotType}</DialogTitle>
+            <DialogDescription>
+              All {replaceDialogMeal?.slotType} slots are full this week. Choose a day to replace with{' '}
+              &ldquo;{replaceDialogMeal?.meal.name}&rdquo;:
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 max-h-60 overflow-y-auto">
+            {replaceDialogMeal && weekDays
+              .filter(d => meals[d]?.[replaceDialogMeal.slotType])
+              .map(day => (
+                <div
+                  key={day}
+                  className="flex items-center justify-between p-2 border border-gray-200 rounded"
+                >
+                  <div className="text-sm">
+                    <span className="font-medium">{format(new Date(day), 'EEEE')}</span>
+                    <span className="text-gray-500 ml-2">
+                      {meals[day]?.[replaceDialogMeal.slotType]?.name}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      captureUndo(meals);
+                      setMeals(prev => ({
+                        ...prev,
+                        [day]: {
+                          ...prev[day],
+                          [replaceDialogMeal.slotType]: replaceDialogMeal.meal,
+                        },
+                      }));
+                      const params = new URLSearchParams(searchParams.toString());
+                      params.delete('addMeal');
+                      router.replace(`/planner?${params.toString()}`, { scroll: false });
+                      setReplaceDialogMeal(null);
+                      showUndoToast(`Replaced with "${replaceDialogMeal.meal.name}"`);
+                    }}
+                    className="px-3 py-1 text-sm bg-forkast-crimson text-white rounded hover:opacity-90"
+                  >
+                    Replace
+                  </button>
+                </div>
+              ))}
+          </div>
+          <DialogClose asChild>
+            <button className="mt-2 px-4 py-2 text-sm text-gray-600 hover:underline font-serif">
+              Cancel
+            </button>
+          </DialogClose>
+        </DialogContent>
+      </Dialog>
     </PaperPage>
   );
 }
