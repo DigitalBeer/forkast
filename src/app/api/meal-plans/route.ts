@@ -207,6 +207,14 @@ export async function GET(req: NextRequest) {
 
     // Get the most recent meal plan (or plan for a specific week)
     const weekStart = req.nextUrl.searchParams.get('weekStart');
+
+    if (weekStart !== null && !/^\d{4}-\d{2}-\d{2}$/.test(weekStart)) {
+      return NextResponse.json(
+        { error: 'Invalid weekStart format (expected YYYY-MM-DD)' },
+        { status: 400 },
+      );
+    }
+
     let planQuery = supabase
       .from('meal_plans')
       .select('*')

@@ -8,6 +8,14 @@ import { WeeklyCalendar } from '@/components/plan/WeeklyCalendar';
 import { MealSuggestionPanel } from '@/components/plan/MealSuggestionPanel';
 import { PaperPage } from '@/components/layout/PaperPage';
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogClose,
+} from '@/components/ui/dialog';
+import {
   DIETARY_TYPES,
   type Meal,
   type MealType,
@@ -863,64 +871,66 @@ export default function PlannerPage() {
         </div>
       </div>
 
-      {/* Replace meal dialog */}
-      {replaceDialogMeal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
-            <h3 className="text-lg font-semibold mb-2 font-serif">
-              Replace a {replaceDialogMeal.slotType}
-            </h3>
-            <p className="text-sm text-gray-600 mb-4">
-              All {replaceDialogMeal.slotType} slots are full this week. Choose a day to replace with{' '}
-              &ldquo;{replaceDialogMeal.meal.name}&rdquo;:
-            </p>
-            <div className="space-y-2 max-h-60 overflow-y-auto">
-              {weekDays
-                .filter(d => meals[d]?.[replaceDialogMeal.slotType])
-                .map(day => (
-                  <div
-                    key={day}
-                    className="flex items-center justify-between p-2 border border-gray-200 rounded"
-                  >
-                    <div className="text-sm">
-                      <span className="font-medium">{format(new Date(day), 'EEEE')}</span>
-                      <span className="text-gray-500 ml-2">
-                        {meals[day]?.[replaceDialogMeal.slotType]?.name}
-                      </span>
-                    </div>
-                    <button
-                      onClick={() => {
-                        setMeals(prev => ({
-                          ...prev,
-                          [day]: {
-                            ...prev[day],
-                            [replaceDialogMeal.slotType]: replaceDialogMeal.meal,
-                          },
-                        }));
-                        const params = new URLSearchParams(searchParams.toString());
-                        params.delete('addMeal');
-                        router.replace(`/planner?${params.toString()}`, { scroll: false });
-                        setReplaceDialogMeal(null);
-                        toast.success(
-                          `Replaced with &ldquo;${replaceDialogMeal.meal.name}&rdquo;`,
-                        );
-                      }}
-                      className="px-3 py-1 text-sm bg-forkast-crimson text-white rounded hover:opacity-90"
-                    >
-                      Replace
-                    </button>
+      <Dialog open={!!replaceDialogMeal} onOpenChange={(open) => {
+        if (!open) {
+          const params = new URLSearchParams(searchParams.toString());
+          params.delete('addMeal');
+          router.replace(`/planner?${params.toString()}`, { scroll: false });
+          setReplaceDialogMeal(null);
+        }
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-serif">Replace a {replaceDialogMeal?.slotType}</DialogTitle>
+            <DialogDescription>
+              All {replaceDialogMeal?.slotType} slots are full this week. Choose a day to replace with{' '}
+              &ldquo;{replaceDialogMeal?.meal.name}&rdquo;:
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 max-h-60 overflow-y-auto">
+            {replaceDialogMeal && weekDays
+              .filter(d => meals[d]?.[replaceDialogMeal.slotType])
+              .map(day => (
+                <div
+                  key={day}
+                  className="flex items-center justify-between p-2 border border-gray-200 rounded"
+                >
+                  <div className="text-sm">
+                    <span className="font-medium">{format(new Date(day), 'EEEE')}</span>
+                    <span className="text-gray-500 ml-2">
+                      {meals[day]?.[replaceDialogMeal.slotType]?.name}
+                    </span>
                   </div>
-                ))}
-            </div>
-            <button
-              onClick={() => setReplaceDialogMeal(null)}
-              className="mt-4 px-4 py-2 text-sm text-gray-600 hover:underline font-serif"
-            >
+                  <button
+                    onClick={() => {
+                      captureUndo(meals);
+                      setMeals(prev => ({
+                        ...prev,
+                        [day]: {
+                          ...prev[day],
+                          [replaceDialogMeal.slotType]: replaceDialogMeal.meal,
+                        },
+                      }));
+                      const params = new URLSearchParams(searchParams.toString());
+                      params.delete('addMeal');
+                      router.replace(`/planner?${params.toString()}`, { scroll: false });
+                      setReplaceDialogMeal(null);
+                      showUndoToast(`Replaced with "${replaceDialogMeal.meal.name}"`);
+                    }}
+                    className="px-3 py-1 text-sm bg-forkast-crimson text-white rounded hover:opacity-90"
+                  >
+                    Replace
+                  </button>
+                </div>
+              ))}
+          </div>
+          <DialogClose asChild>
+            <button className="mt-2 px-4 py-2 text-sm text-gray-600 hover:underline font-serif">
               Cancel
             </button>
-          </div>
-        </div>
-      )}
+          </DialogClose>
+        </DialogContent>
+      </Dialog>
     </PaperPage>
   );
 }
