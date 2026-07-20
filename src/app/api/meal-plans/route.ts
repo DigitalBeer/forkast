@@ -189,8 +189,8 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// GET endpoint to fetch latest meal plan
-export async function GET() {
+// GET endpoint to fetch latest meal plan (or plan for a specific week)
+export async function GET(req: NextRequest) {
   try {
     const supabase = await createSupabaseServerClient();
 
@@ -205,11 +205,18 @@ export async function GET() {
     }
     const user = session.user;
 
-    // Get the most recent meal plan
-    const { data: mealPlan, error: planError } = await supabase
+    // Get the most recent meal plan (or plan for a specific week)
+    const weekStart = req.nextUrl.searchParams.get('weekStart');
+    let planQuery = supabase
       .from('meal_plans')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', user.id);
+
+    if (weekStart) {
+      planQuery = planQuery.eq('start_date', weekStart);
+    }
+
+    const { data: mealPlan, error: planError } = await planQuery
       .order('created_at', { ascending: false })
       .limit(1)
       .single();
