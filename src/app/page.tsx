@@ -246,7 +246,7 @@ function AuthenticatedDashboard() {
                   href="/plan"
                   className="text-sm text-cookbook-terracotta hover:text-cookbook-terracotta/80 font-medium"
                 >
-                  View Full Plan &rarr;
+                  View Full Plan →
                 </Link>
                 <Link
                   href={`/meal-plans/${mealPlan.id}`}
@@ -332,7 +332,7 @@ function AuthenticatedDashboard() {
                   <p
                     className={`text-xs mt-1 ${week.hasPlans ? 'text-cookbook-sage' : 'text-muted-foreground/60'}`}
                   >
-                    {week.hasPlans ? 'Planned' : 'No plan'}
+                    {week.hasPlans ? '✓ Planned' : 'No plan'}
                   </p>
                   {!week.hasPlans && (
                     <Link

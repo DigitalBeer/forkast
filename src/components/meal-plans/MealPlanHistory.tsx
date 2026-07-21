@@ -164,7 +164,6 @@ export function MealPlanHistory() {
                       <Link
                         href={`/meal-plans/${plan.id}`}
                         onClick={(e) => {
-                          e.preventDefault();
                           e.stopPropagation();
                         }}
                         className="flex items-center gap-1 px-3 py-1.5 bg-cookbook-terracotta text-white font-serif text-sm rounded-md hover:bg-cookbook-terracotta/90 transition-colors"
