@@ -180,7 +180,7 @@ export default function PlanViewPage() {
               href="/"
               className="text-cookbook-terracotta hover:text-cookbook-terracotta/80 font-medium"
             >
-              ← Back to Dashboard
+              &larr; Back to Dashboard
             </Link>
           </div>
         </div>
