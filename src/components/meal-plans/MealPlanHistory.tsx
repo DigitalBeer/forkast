@@ -156,11 +156,20 @@ export function MealPlanHistory() {
                           e.stopPropagation();
                           handleShare(plan.id);
                         }}
-                        className="flex items-center gap-1 px-3 py-1.5 bg-cookbook-terracotta text-white font-serif text-sm rounded-md hover:bg-cookbook-terracotta/90 transition-colors"
+                        className="flex items-center gap-1 px-3 py-1.5 bg-white text-red-600 font-serif text-sm rounded-md border border-red-200 hover:bg-red-50 transition-colors"
                       >
                         <Share2 className="w-3 h-3" />
                         Share
                       </button>
+                      <Link
+                        href={`/meal-plans/${plan.id}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                        }}
+                        className="flex items-center gap-1 px-3 py-1.5 bg-cookbook-terracotta text-white font-serif text-sm rounded-md hover:bg-cookbook-terracotta/90 transition-colors"
+                      >
+                        Full Plan
+                      </Link>
                       <div className="text-sm text-foreground font-serif whitespace-nowrap">
                         {plan.summary.mealCount} meal{plan.summary.mealCount === 1 ? '' : 's'}
                       </div>
@@ -172,7 +181,7 @@ export function MealPlanHistory() {
                           setDeleteTarget(plan);
                           setDeleteModalOpen(true);
                         }}
-                        className="px-3 py-1.5 font-serif text-sm text-red-700 rounded-md border border-red-200 hover:bg-red-50 transition-colors"
+                        className="px-3 py-1.5 font-serif text-sm bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
                         data-testid="delete-meal-plan"
                       >
                         Delete

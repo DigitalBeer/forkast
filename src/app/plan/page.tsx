@@ -117,6 +117,13 @@ export default function PlanViewPage() {
                 Print
               </button>
               <Link
+                href={`/meal-plans/${mealPlan.id}`}
+                className="px-4 py-2 font-serif text-forkast-paper rounded wobble transition-opacity hover:opacity-90"
+                style={{ background: 'var(--forkast-ink)' }}
+              >
+                Full Plan
+              </Link>
+              <Link
                 href="/meal-plans/history"
                 className="px-4 py-2 font-serif text-forkast-ink rounded wobble transition-colors hover:bg-muted"
                 style={{ border: '1.3px solid var(--forkast-ink)' }}
@@ -173,7 +180,7 @@ export default function PlanViewPage() {
               href="/"
               className="text-cookbook-terracotta hover:text-cookbook-terracotta/80 font-medium"
             >
-              ← Back to Dashboard
+              &larr; Back to Dashboard
             </Link>
           </div>
         </div>

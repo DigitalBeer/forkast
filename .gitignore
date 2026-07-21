@@ -116,3 +116,5 @@ yarn.lock
 
 # Exclude all contents of a directory but keep the directory structure
 build/*
+.pi-orchestrator/
+.pi/npm/
