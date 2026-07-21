@@ -248,6 +248,12 @@ function AuthenticatedDashboard() {
                 >
                   View Full Plan →
                 </Link>
+                <Link
+                  href={`/meal-plans/${mealPlan.id}`}
+                  className="text-sm text-cookbook-terracotta hover:text-cookbook-terracotta/80 font-medium"
+                >
+                  Shopping List & Duplicate
+                </Link>
               </div>
             </div>
 
