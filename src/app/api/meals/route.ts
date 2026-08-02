@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { FREE_TIER_MEAL_LIMIT } from '@/lib/subscription';
 import type { PostgrestError } from '@supabase/supabase-js';
 
 export async function GET() {
@@ -185,6 +186,35 @@ export async function POST(req: NextRequest) {
 
     if (!name.trim()) {
       return NextResponse.json({ error: 'Name is required' }, { status: 400 });
+    }
+
+    // Enforce the free-tier meal cap server-side when creating a new meal.
+    // (Editing an existing meal does not count against the cap.)
+    if (!id) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('subscription_status')
+        .eq('id', user.id)
+        .single();
+
+      const isPremium = profile?.subscription_status === 'premium';
+
+      if (!isPremium) {
+        const { count } = await supabase
+          .from('meals')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id);
+
+        if ((count || 0) >= FREE_TIER_MEAL_LIMIT) {
+          return NextResponse.json(
+            {
+              error: `Free plan is limited to ${FREE_TIER_MEAL_LIMIT} meals. Upgrade to premium to add more.`,
+              code: 'MEAL_LIMIT_REACHED',
+            },
+            { status: 403 },
+          );
+        }
+      }
     }
 
     const basePayload: Record<string, unknown> = {
