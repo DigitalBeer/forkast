@@ -36,7 +36,7 @@ describe('DietaryPreferencesStep', () => {
   });
 
   it('shows checkmark for selected options', () => {
-    const { container } = render(
+    render(
       <DietaryPreferencesStep selected={['vegan']} onChange={vi.fn()} />
     );
     // The vegan card should have a green border class

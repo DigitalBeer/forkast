@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getMealSuggestions, getFilteredMealSuggestions } from '../suggestionService';
-import type { MealSuggestionRequest, MealSuggestionResponse } from '../../../types/meal';
+import type { MealSuggestionRequest } from '../../../types/meal';
 
 vi.mock('@/lib/supabase/client', () => ({
   createClient: vi.fn(() => ({

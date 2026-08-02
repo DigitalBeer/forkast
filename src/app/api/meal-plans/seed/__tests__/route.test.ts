@@ -159,7 +159,6 @@ describe('POST /api/meal-plans/seed — Auto-Generate Starter Plan', () => {
     expect(json.planId).toBe(102);
 
     // Verify planned_meals insert was called with correct data
-    const plannedMealsInsert = mockPlannedMealsInsertChain(null).insert;
     expect(fromMock).toHaveBeenCalledWith('planned_meals');
   });
 

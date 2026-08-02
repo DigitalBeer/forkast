@@ -489,7 +489,34 @@ Do not leave both.
 
 ## Tier 3 — Practices and hygiene
 
-### P1. Lint and type-check do not cover any test code
+### P1. Lint and type-check do not cover any test code — FIXED (2026-08-02)
+
+Removed test paths from `tsconfig.json` `exclude` and from `.eslintrc.cjs` `ignorePatterns` (added a
+scoped `overrides` block turning off `@typescript-eslint/no-explicit-any` for test files instead,
+since loose mock typing there is legitimate). Discovered along the way that **`.eslintignore` was
+silently re-excluding all test files even after the `.eslintrc.cjs` change** — the two ignore
+mechanisms were redundant and had drifted, so a first "clean" lint run was a false negative. Deleted
+`.eslintignore` (see P2) and re-ran.
+
+Fixing `tsc --noEmit` needed one structural fix — added `vitest-env.d.ts` at the project root
+(`/// <reference types="vitest/globals" />`) so TypeScript recognizes `describe`/`it`/`expect` in
+files that rely on Vitest's injected globals rather than importing them — plus about a dozen
+genuine small fixes (unused variables/imports, a couple of loose `as` casts). One is worth flagging
+on its own: `src/lib/data/adapters.test.ts`'s `testMeal.ingredients` was typed as a plain string
+while `MealFormInputs.ingredients` requires a structured `{name,quantity,unit}[]`. Tracing it further
+surfaced a **real, separate bug**: `LocalStorageAdapter` in `src/lib/data/adapters.ts` writes
+whatever `ingredients` shape `MealFormInputs` provides (an array) but reads it back through
+`localStorageMealSchema`, which expects a comma-separated *string* (see `parseIngredients`). Today,
+any meal created or edited while unauthenticated should fail Zod validation on the next `getAll()`
+and get silently dropped with a `console.warn`. Left unfixed here (redesigning the ingredients
+serialization pipeline is a real feature-level fix, not a lint/type-check hygiene one) — see new item
+**P10** below. The test itself was fixed with a type-only cast that preserves its current (working)
+runtime shape rather than changing what it actually stores.
+
+Lint itself surfaced only 3 warnings once test files were actually included: two genuinely dead
+variables (removed) and one test mock legitimately using `<img>` to stand in for `next/image`
+(added the same `eslint-disable-next-line` pattern already used at `MealImageUpload.tsx:156` for
+the identical situation).
 
 `.eslintrc.cjs` `ignorePatterns` and `.eslintignore` both exclude `tests/`, `e2e/`, `**/__tests__/`,
 `*.test.ts(x)`, `*.spec.ts(x)`. `tsconfig.json` `exclude` does the same. So `npm run quality-check`
@@ -507,7 +534,16 @@ at all, which is how you end up with mocks that drift from the code they mock.
 
 ---
 
-### P2. Two ESLint configuration systems are half-installed
+### P2. Two ESLint configuration systems are half-installed — FIXED (2026-08-02)
+
+Confirmed via grep that no `eslint.config.{js,mjs}` flat-config file exists anywhere in the repo and
+nothing imports `@eslint/js`, `@eslint/eslintrc`, or `globals` — genuinely dead, not a half-finished
+migration anyone is mid-way through. Ran `npm uninstall @eslint/js @eslint/eslintrc globals` and
+deleted `.eslintignore` (see P1 for why — it had drifted from `.eslintrc.cjs`'s `ignorePatterns` and
+was silently hiding a whole category of files from lint). `npm audit` after the uninstall reports
+48 pre-existing vulnerabilities (1 critical, 25 high) across the dependency tree — unrelated to this
+removal, not investigated as part of this pass. Worth a dedicated look; `npm audit fix --force` can
+introduce breaking major-version bumps so don't run it blind.
 
 The repo uses legacy `.eslintrc.cjs` + `.eslintignore` (ESLint 8 style), and `eslint@^8.57.0` is the
 installed version — that part is coherent. But `devDependencies` also carries `@eslint/js@^9.32.0`,

@@ -11,12 +11,6 @@ test.describe('Meal Image Upload', () => {
     const mealName = 'Test Image Meal';
     await page.getByLabel('Meal Name').fill(mealName);
 
-    // Create a small valid image for testing
-    const imagePath = path.join(__dirname, 'test-image.png');
-    // We assume a test image exists or we use a known path in the repo if available.
-    // For the purpose of this test, we will use a simple placeholder if we can't find one.
-    // In a real scenario, we'd ensure the file is present in the e2e folder.
-
     const fileChooserPromise = page.waitForEvent('filechooser');
     await page.getByLabel('Meal Image').click();
     const fileChooser = await fileChooserPromise;

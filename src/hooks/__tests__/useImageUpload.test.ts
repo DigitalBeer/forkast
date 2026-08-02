@@ -45,7 +45,6 @@ describe('getStoragePathFromUrl', () => {
   });
 
   it('returns null when marker is at end of URL with no path after', () => {
-    const url = `${baseUrl}`.slice(0, -1); // remove trailing slash
     const urlWithMarkerOnly =
       'https://abc.supabase.co/storage/v1/object/public/meal-images';
     expect(getStoragePathFromUrl(urlWithMarkerOnly)).toBeNull();
