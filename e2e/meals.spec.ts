@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { waitForPageLoad } from './helpers/test-utils';
 
 // Enable tracing on first retry and retain traces for failures
 // This helps us debug flaky tests by preserving context
@@ -19,14 +20,6 @@ const testMeal = {
   tags: ['test', 'e2e']
 };
 
-// Helper function to wait for the page to be fully loaded
-const waitForPageLoad = async (page) => {
-  // Wait for both network idle and DOM content to be loaded for max reliability
-  await Promise.all([
-    page.waitForLoadState('networkidle'),
-    page.waitForLoadState('domcontentloaded'),
-  ]);
-};
 
 test.describe('Meal Management', () => {
   // Capture browser console messages for each test to aid debugging

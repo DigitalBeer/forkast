@@ -8,7 +8,7 @@ import type { Meal } from '@/types/meal';
 import { MealTypeIcon } from '@/components/ui/MealTypeIcon';
 import { MealImage } from '@/components/meals/MealImage';
 
-interface MealCardProps {
+interface PlannerMealCardProps {
   meal: Meal;
   onRemove?: () => void;
   onDuplicate?: () => void;
@@ -17,14 +17,14 @@ interface MealCardProps {
   compact?: boolean;
 }
 
-export function MealCard({
+export function PlannerMealCard({
   meal,
   onRemove,
   onDuplicate,
   onCooked,
   onSkip,
   compact = false,
-}: MealCardProps) {
+}: PlannerMealCardProps) {
   const [{ isDragging }, drag] = useDrag(
     () => ({
       type: 'meal',

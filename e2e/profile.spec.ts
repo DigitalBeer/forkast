@@ -1,11 +1,5 @@
 import { test, expect } from '@playwright/test';
-
-const waitForPageLoad = async (page) => {
-  await Promise.all([
-    page.waitForLoadState('networkidle'),
-    page.waitForLoadState('domcontentloaded'),
-  ]);
-};
+import { waitForPageLoad } from './helpers/test-utils';
 
 test.describe('Profile Management', () => {
   test.beforeEach(async ({ page }) => {

@@ -377,7 +377,11 @@ the TypeScript boundary, and centralise coercion in exactly one helper —
 
 ## Tier 2 — Dead code and redundancy
 
-### D1. Delete the orphaned shopping-list implementation (~560 lines)
+### D1. Delete the orphaned shopping-list implementation (~560 lines) — DONE (2026-08-02)
+
+Confirmed via grep that nothing outside the two files imported each other; deleted both.
+
+
 
 `src/components/plan/ShoppingList.tsx` (394 lines) and `src/components/plan/ShoppingListSection.tsx`
 (167 lines) are imported by nothing except each other. The live implementation is
@@ -391,19 +395,14 @@ contains behaviour the newer components lack (check the "have it" / staples hand
 
 ---
 
-### D2. Resolve the duplicated component families
+### D2. Resolve the duplicated component families — DONE, with one correction (2026-08-02)
 
-Four sets of near-duplicates, all reachable, all quietly diverging:
-
-| Duplicate | Keep | Action |
+| Duplicate | Finding | Action |
 |---|---|---|
-| `components/common/LoadingSpinner.tsx` vs `components/ui/LoadingSpinner.tsx` | `ui/` | Repoint imports, delete `common/` |
-| `components/meals/MealCard.tsx` vs `components/plan/MealCard.tsx` | Both, but rename | Rename the planner one to `PlannerMealCard.tsx` — they are genuinely different things, the shared name is the problem |
-| `components/common/ConfirmationModal.tsx` vs `components/ui/alert-dialog.tsx` | `ui/alert-dialog` (Radix) | Migrate callers, delete the hand-rolled one |
-| `components/common/ErrorBoundary.tsx` + `components/ui/ErrorMessage.tsx` | Both | Fine — different purposes. Just wire the `// TODO: Send to error tracking service` at `ErrorBoundary.tsx:30` up to Sentry, which is already installed |
-
-**Fix:** One PR per row. Use `grep -rn "components/common/LoadingSpinner"` to find call sites.
-`npm run type-check` catches anything missed.
+| `components/common/LoadingSpinner.tsx` vs `components/ui/LoadingSpinner.tsx` | `common/` had **zero importers** anywhere — dead, not actually a live duplicate | Deleted `common/LoadingSpinner.tsx` outright |
+| `components/meals/MealCard.tsx` vs `components/plan/MealCard.tsx` | Genuinely different components (meals catalog vs. planner drag-and-drop) sharing a name. A third, unrelated local `MealCard` function also lives inside `src/app/plan/page.tsx` (private to that file, not a real collision) | Renamed `components/plan/MealCard.tsx` → `PlannerMealCard.tsx` (component + props type), updated its two importers `MealSlot.tsx` and `MealSuggestionPanel.tsx` |
+| `components/common/ConfirmationModal.tsx` vs `components/ui/alert-dialog.tsx` | **Correction:** on inspection `ConfirmationModal` is not a hand-rolled duplicate — it already is a thin, well-formed wrapper around `ui/alert-dialog` (Radix), used by 3 files. Nothing to fix. | No action — original plan item was wrong |
+| `components/common/ErrorBoundary.tsx` + `components/ui/ErrorMessage.tsx` | Different purposes, both legitimate | Deferred to P5 (wire the Sentry TODO) |
 
 ---
 
@@ -420,7 +419,14 @@ with no visible logic to the choice.
 
 ---
 
-### D4. Prune the working tree — 2.3 GB of stale build artefacts
+### D4. Prune the working tree — 2.3 GB of stale build artefacts — DONE (2026-08-02)
+
+Verified each `.tar` was genuinely an OCI/Docker image export (`tar -tvf` shows `blobs/sha256/...`,
+not personal data) before deleting. Removed all three tars, the two stray root logs,
+`test-results.json`, `tmp-extract.mjs`, and `tsconfig.tsbuildinfo`. None were git-tracked, so this
+was a local-disk-only change with nothing to commit. Left the AI-tooling directories
+(`.agent`/`.agents`/`.zencoder`/etc.) alone — deciding which one is still in active use needs your
+input, not mine.
 
 None of this is tracked by git (`.gitignore` covers it), so this is purely local disk and IDE-indexing
 noise, but it is slowing every tool that walks the tree:
@@ -461,7 +467,15 @@ are not comfortable rewriting history**; 406 MB is annoying, not harmful.
 
 ---
 
-### D6. Dead E2E helper library
+### D6. Dead E2E helper library — PARTIALLY DONE (2026-08-02)
+
+**Correction:** the file wasn't fully dead — `waitForPageLoad` was already imported by
+`e2e/drag-drop-polish.spec.ts`, while three *other* specs (`meal-planner.spec.ts`, `meals.spec.ts`,
+`profile.spec.ts`) each defined a byte-identical local copy instead of importing it. Consolidated: all
+four specs now import the one shared `waitForPageLoad`. The other 17 exports in `test-utils.ts`
+(`createTestMeal`, `login`, `mockApiRoute`, etc.) are still unused by any spec — left as-is rather than
+deleted, since trimming a test-helpers file I can't run Playwright against to verify is lower-value,
+higher-risk than the rest of this pass. Original text below for reference.
 
 `e2e/helpers/test-utils.ts` exports 18 functions (`waitForApiResponse`, `createTestMeal`, `login`,
 `logout`, `mockApiRoute`, …) and **not one is imported by any spec**. Meanwhile three specs define
