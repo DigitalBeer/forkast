@@ -3,11 +3,11 @@ import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const supabase = await createSupabaseServerClient();
-    
+
     // Get current user
     const { data: { session }, error: authError } = await supabase.auth.getSession();
     if (authError || !session?.user) {
@@ -16,8 +16,7 @@ export async function POST(
     }
     const user = session.user;
 
-    const resolvedParams = await params;
-    const mealPlanId = parseInt(resolvedParams.id);
+    const mealPlanId = parseInt(params.id);
     if (isNaN(mealPlanId)) {
       return NextResponse.json({ error: 'Invalid meal plan ID' }, { status: 400 });
     }

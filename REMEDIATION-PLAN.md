@@ -267,7 +267,16 @@ production schema actually is.
 
 ---
 
-### C2. Server-side code calls the *browser* Supabase client
+### C2. Server-side code calls the *browser* Supabase client — FIXED (2026-08-02)
+
+`SupabaseAdapter` now takes an optional injected client in its constructor, defaulting to the
+browser client so every existing client-side call site is unchanged. `duplicateMealAction` passes
+its server client through `duplicateMeal(..., supabase)` → `getMealAdapter(isAuthenticated, client)`.
+Also added an explicit `Unauthorized` guard to `duplicateMealAction` (it previously fell through to
+the adapter for unauthenticated callers) and made `LocalStorageAdapter` throw instead of silently
+no-op when `typeof window === 'undefined'`, with the one legitimate server-side localStorage fallback
+in `duplicateMeal` (used when an authenticated user's meal isn't in Supabase) now guarded to only run
+in the browser.
 
 **Files:** `src/lib/data/adapters.ts:1,37` (`SupabaseAdapter` imports `@/lib/supabase/client`),
 consumed by `src/lib/data/meals.ts` and `src/app/actions/mealActions.ts`
@@ -297,7 +306,11 @@ Signed in, duplicating a meal must actually create the "(Copy)" row.
 
 ---
 
-### C3. Next.js 14 route handlers typed for Next.js 15 params
+### C3. Next.js 14 route handlers typed for Next.js 15 params — FIXED (2026-08-02)
+
+Converted the four holdouts (`meal-plans/[id]/share`, `.../shares`, `.../shares/[shareId]`,
+`shared/[token]`) to the sync `{ params: { id: string } }` form used everywhere else, dropping the
+`await params` / `resolvedParams` indirection.
 
 **Files:** `src/app/api/meals/[id]/prepare/route.ts:13` uses `{ params: { id: string } }` (sync);
 `src/app/api/meal-plans/[id]/route.ts`, `.../share/route.ts`, `.../shares/route.ts`,
@@ -340,7 +353,10 @@ mapping is re-implemented per file.
 
 ---
 
-### C5. `Meal.id` is typed `string`, the database column is `bigint`
+### C5. `Meal.id` is typed `string`, the database column is `bigint` — FIXED (2026-08-02)
+
+Added `isValidMealId`/`toDbMealId` to `src/lib/utils.ts` and pointed `mealActions.ts` (both actions
+had their own copy of the same two regexes) and `api/meals/route.ts`'s upsert payload at them.
 
 **Files:** `src/types/meal.ts:8`, `supabase/migrations/20250101000000_create_meals_table.sql:6`
 

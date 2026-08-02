@@ -3,11 +3,11 @@ import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: Promise<{ id: string; shareId: string }> }
+  { params }: { params: { id: string; shareId: string } }
 ) {
   try {
     const supabase = await createSupabaseServerClient();
-    
+
     // Get current user
     const { data: { session }, error: authError } = await supabase.auth.getSession();
     if (authError || !session?.user) {
@@ -16,9 +16,8 @@ export async function DELETE(
     }
     const user = session.user;
 
-    const resolvedParams = await params;
-    const mealPlanId = parseInt(resolvedParams.id);
-    const shareId = parseInt(resolvedParams.shareId);
+    const mealPlanId = parseInt(params.id);
+    const shareId = parseInt(params.shareId);
     
     if (isNaN(mealPlanId) || isNaN(shareId)) {
       return NextResponse.json({ error: 'Invalid ID parameters' }, { status: 400 });

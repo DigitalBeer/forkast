@@ -10,11 +10,11 @@ function getSupabaseAdmin() {
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: Promise<{ token: string }> },
+  { params }: { params: { token: string } },
 ) {
   try {
     const supabase = getSupabaseAdmin();
-    const { token } = await params;
+    const { token } = params;
 
     if (!token) {
       return NextResponse.json({ error: 'Token is required' }, { status: 400 });

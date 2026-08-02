@@ -4,6 +4,7 @@ import type { MealFormInputs } from "@/components/meals/MealForm";
 import type { Meal } from "@/types/meal";
 import { mealSchema } from "@/components/meals/MealForm";
 import { MealHistoryService } from "./meal-history.service";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 // Re-export StorableMeal for public API
 export type { StorableMeal };
@@ -247,24 +248,26 @@ export async function deleteMeal(id: string, isAuthenticated: boolean): Promise<
 export async function duplicateMeal(
   id: string,
   isAuthenticated: boolean,
-  userId?: string
+  userId?: string,
+  supabaseClient?: SupabaseClient,
 ): Promise<ServiceResponse<StorableMeal>> {
   // Input validation
   if (!id || typeof id !== 'string') {
-    return { 
-      success: false, 
-      error: "Invalid meal ID provided." 
+    return {
+      success: false,
+      error: "Invalid meal ID provided."
     };
   }
 
   try {
     // Try to get the original meal from the appropriate adapter
-    const adapter = getMealAdapter(isAuthenticated);
-    
+    const adapter = getMealAdapter(isAuthenticated, supabaseClient);
+
     let originalMeal = await adapter.get(id);
-    
-    // If authenticated but not found in Supabase, try localStorage
-    if (!originalMeal && isAuthenticated) {
+
+    // If authenticated but not found in Supabase, try localStorage.
+    // Browser-only: on the server there is no localStorage to fall back to.
+    if (!originalMeal && isAuthenticated && typeof window !== 'undefined') {
       const localAdapter = new LocalStorageAdapter();
       originalMeal = await localAdapter.get(id);
     }

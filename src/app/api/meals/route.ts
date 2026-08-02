@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { FREE_TIER_MEAL_LIMIT } from '@/lib/subscription';
+import { toDbMealId } from '@/lib/utils';
 
 export async function GET() {
   try {
@@ -215,7 +216,7 @@ export async function POST(req: NextRequest) {
     }
 
     const payload: Record<string, unknown> = {
-      id: id ? (Number.isFinite(Number(id)) ? Number(id) : id) : undefined,
+      id: id ? toDbMealId(id) : undefined,
       user_id: user.id,
       name,
       meal_type,
