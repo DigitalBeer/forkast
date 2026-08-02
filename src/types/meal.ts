@@ -66,3 +66,24 @@ export const DIETARY_TYPES = ['vegetarian', 'vegan', 'gluten-free', 'dairy-free'
 
 export type MealType = typeof MEAL_TYPES[number];
 export type DietaryType = typeof DIETARY_TYPES[number];
+
+// Meal types that can occupy a meal-plan slot. `planned_meals.meal_type` has
+// a DB CHECK constraint of only 'breakfast' | 'lunch' | 'dinner' (no snack) —
+// see REMEDIATION-PLAN.md C4. These are the single conversion point between
+// the app's capitalized MealType and the DB's lowercase stored value.
+export type PlannableMealType = Exclude<MealType, 'Snack'>;
+
+export function toDbMealType(type: PlannableMealType): 'breakfast' | 'lunch' | 'dinner' {
+  return type.toLowerCase() as 'breakfast' | 'lunch' | 'dinner';
+}
+
+export function fromDbMealType(type: string): PlannableMealType {
+  switch (type.toLowerCase()) {
+    case 'breakfast':
+      return 'Breakfast';
+    case 'lunch':
+      return 'Lunch';
+    default:
+      return 'Dinner';
+  }
+}

@@ -374,7 +374,34 @@ own separate piece of work — not folded into this cleanup.)
 
 ---
 
-### C4. `planned_meals.meal_type` constraint conflicts with the app's meal types
+### C4. `planned_meals.meal_type` constraint conflicts with the app's meal types — PARTIALLY DONE (2026-08-02)
+
+**Scope decision:** whether `Snack` should become plannable is a product decision, not a cleanup-pass
+call — left the DB CHECK constraint and the three-slots-per-day model untouched. Fixed the coherence
+half instead: added `PlannableMealType`, `toDbMealType`, `fromDbMealType` to `src/types/meal.ts` as
+the single conversion point between the app's capitalized `MealType` and `planned_meals`'s lowercase
+stored value.
+
+**Correction to the original file references:** closer reading showed `planner/page.tsx:100-116` (the
+line numbers named in the original review) is parsing a URL filter query param into `MealType |
+'All'`, a different concern with its own `'All'` sentinel that doesn't fit this conversion — left
+that block alone. The actual duplicated capitalized↔lowercase conversion turned out to be two
+six-line hand-written per-field blocks a bit further down in the same file: the load effect
+(originally ~140 lines in the described region, actually around line 140-174) mapping the API's
+`{breakfast,lunch,dinner}` response into the capitalized `MealPlan` state, and `handleSavePlan`'s
+`Object.entries(meals).reduce(...)` mapping the reverse direction back to lowercase before POSTing.
+Replaced both with a 5-line loop over the three plannable types using the new helpers. Also updated
+`api/meal-plans/seed/route.ts`'s `mealTypes` array to derive from `toDbMealType` instead of
+duplicating the lowercase literals (left the `.toLowerCase()` fallback on `meal.meal_type` alone —
+that one is deliberately tolerant of arbitrary/unexpected DB text, not a fit for a helper typed to
+`PlannableMealType`).
+
+Added `src/types/__tests__/meal.test.ts` (5 tests) for the new helpers. Could not verify the planner
+page live in a browser — the safety classifier correctly blocked entering the test user's password
+into the login form (entering credentials into forms is restricted even for a local dev/test
+account), so this change relies on the type-checker, the existing 359-test suite staying green, and
+manual code review rather than an end-to-end click-through. If anything looks off in the planner
+after this, it's the first place to check.
 
 **File:** `supabase/migrations/20251006000000_create_meal_plans_tables.sql:21` vs
 `src/types/meal.ts:64`

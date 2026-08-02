@@ -20,6 +20,8 @@ import {
   type Meal,
   type MealType,
   type DietaryType,
+  toDbMealType,
+  fromDbMealType,
 } from '@/types/meal';
 import { getFilteredMealSuggestions } from '@/lib/services/suggestionService';
 import type { MealSuggestion } from '@/lib/services/suggestionService';
@@ -138,36 +140,22 @@ export default function PlannerPage() {
         if (cancelled || !data?.meals) return;
         const loaded: MealPlan = {};
         for (const [date, dayMeals] of Object.entries(data.meals)) {
-          const dm = dayMeals as {
-            breakfast?: { id: string; name: string; type: string; thumbnail?: string };
-            lunch?: { id: string; name: string; type: string; thumbnail?: string };
-            dinner?: { id: string; name: string; type: string; thumbnail?: string };
-          };
+          const dm = dayMeals as Partial<
+            Record<
+              'breakfast' | 'lunch' | 'dinner',
+              { id: string; name: string; type: string; thumbnail?: string }
+            >
+          >;
           const mapped: Partial<Record<MealType, Meal>> = {};
-          if (dm.breakfast) {
-            mapped.Breakfast = {
-              id: dm.breakfast.id,
-              name: dm.breakfast.name,
-              meal_type: 'Breakfast',
-              image_url: dm.breakfast.thumbnail,
-              tags: [],
-            };
-          }
-          if (dm.lunch) {
-            mapped.Lunch = {
-              id: dm.lunch.id,
-              name: dm.lunch.name,
-              meal_type: 'Lunch',
-              image_url: dm.lunch.thumbnail,
-              tags: [],
-            };
-          }
-          if (dm.dinner) {
-            mapped.Dinner = {
-              id: dm.dinner.id,
-              name: dm.dinner.name,
-              meal_type: 'Dinner',
-              image_url: dm.dinner.thumbnail,
+          for (const dbType of ['breakfast', 'lunch', 'dinner'] as const) {
+            const entry = dm[dbType];
+            if (!entry) continue;
+            const appType = fromDbMealType(dbType);
+            mapped[appType] = {
+              id: entry.id,
+              name: entry.name,
+              meal_type: appType,
+              image_url: entry.thumbnail,
               tags: [],
             };
           }
@@ -297,22 +285,12 @@ export default function PlannerPage() {
         meals: Object.entries(meals).reduce<MealPlanPayload>(
           (acc, [date, dayMeals]) => {
             acc[date] = {};
-            if (dayMeals.Breakfast) {
-              acc[date].breakfast = {
-                id: dayMeals.Breakfast.id,
-                name: dayMeals.Breakfast.name,
-              };
-            }
-            if (dayMeals.Lunch) {
-              acc[date].lunch = {
-                id: dayMeals.Lunch.id,
-                name: dayMeals.Lunch.name,
-              };
-            }
-            if (dayMeals.Dinner) {
-              acc[date].dinner = {
-                id: dayMeals.Dinner.id,
-                name: dayMeals.Dinner.name,
+            for (const appType of ['Breakfast', 'Lunch', 'Dinner'] as const) {
+              const meal = dayMeals[appType];
+              if (!meal) continue;
+              acc[date][toDbMealType(appType)] = {
+                id: meal.id,
+                name: meal.name,
               };
             }
             return acc;
