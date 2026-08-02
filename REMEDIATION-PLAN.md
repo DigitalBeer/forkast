@@ -557,7 +557,19 @@ drifted (`ignorePatterns` has `src/lib/data/__tests__/` and `test-next-app/`; `.
 
 ---
 
-### P3. `.gitignore` excludes files the project needs
+### P3. `.gitignore` excludes files the project needs — FIXED (2026-08-02)
+
+Removed `README.md`, `DOCKER_DEPLOY.md`, `EDGE_FUNCTION_DEPLOY.md`, `QA_GUIDELINES.md` (doesn't exist
+on disk), `docs/` (doesn't exist on disk), `scripts/`, and the stray `1` line from `.gitignore`.
+Tracked `README.md`, `DOCKER_DEPLOY.md`, and `EDGE_FUNCTION_DEPLOY.md` after scanning them for
+accidentally-embedded secrets (found none — just variable names and a truncated `eyJ...` placeholder).
+
+Removing the `scripts/` ignore rule surfaced the exact bug this item predicted: **five real,
+referenced script files were sitting on disk, completely untracked, invisible to `git status`**:
+`scripts/build.ps1`, `scripts/push-supabase-migrations.ps1`, `scripts/update-unraid.ps1`,
+`scripts/deploy-checklist.md`, and — most notably — `scripts/setup-user-meals.ts`, which
+`package.json`'s `setup:user` npm script has been pointing at the whole time. Scanned all five for
+secrets (none — they all read credentials from gitignored `.env*` files or CLI args) and tracked them.
 
 Current `.gitignore` ignores `README.md`, `DOCKER_DEPLOY.md`, `EDGE_FUNCTION_DEPLOY.md`,
 `QA_GUIDELINES.md`, `claude.md`, `docs/`, `scripts/`, and `.mcp.json`. Consequences:
@@ -630,7 +642,30 @@ one will likely dissolve during extraction.
 
 ---
 
-### P7. `.env` sprawl: five files, no single source of truth
+### P7. `.env` sprawl: five files, no single source of truth — FIXED (2026-08-02)
+
+Rewrote `.env.example` as the complete, authoritative list, derived from
+`grep -rho "process\.env\.[A-Z_]*" src supabase`: `NEXT_PUBLIC_SUPABASE_URL`,
+`NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_APP_VERSION`,
+`NEXT_PUBLIC_SENTRY_DSN`, `SUPABASE_SERVICE_ROLE_KEY`/`EDGE_SERVICE_ROLE_KEY`, `STRIPE_SECRET_KEY`,
+`STRIPE_PRICE_ID`, `STRIPE_WEBHOOK_SECRET`, plus `TEST_USER_EMAIL`/`TEST_USER_PASSWORD` and
+`BASE_URL` (used by e2e/scripts). Dropped `REDIS_URL` (referenced nowhere in `src/`) and
+`STRIPE_PUBLISHABLE_KEY` (also referenced nowhere — see new note below). Kept both service-role
+key names since three files already fall back between them.
+
+**Bigger fix, found while doing this:** `.gitignore`'s blanket `.env*` rule was excluding the
+*template* files too — `.env.example`, `.env.docker.example`, `.env.docker.local.example` were never
+tracked in git at all. `DOCKER_DEPLOY.md`'s own setup instructions (`copy .env.docker.example
+.env.docker`) were broken for anyone but the original developer, since that file didn't exist in a
+fresh clone. Verified all three contain only placeholders (`eyJ...`, `sk_live_...`,
+`xxxxxxxxxxxxxxxxxxxx`), added `!.env.example` / `!.env.docker.example` / `!.env.docker.local.example`
+negation rules, and tracked all three. Real `.env`/`.env.local`/`.env.docker`/`.env.test` remain
+fully ignored — verified with `git check-ignore`.
+
+**Minor aside:** `@stripe/stripe-js` is a `package.json` dependency and `STRIPE_PUBLISHABLE_KEY` is
+referenced in the old `.env.example`, but neither `loadStripe` nor `STRIPE_PUBLISHABLE_KEY` appears
+anywhere in `src/` — checkout is handled entirely server-side via `stripe.checkout.sessions.create()`
+with a redirect. The dependency may be safe to remove; not investigated further here.
 
 `.env`, `.env.local`, `.env.test`, `.env.docker`, `.env.example`, `.env.docker.example`,
 `.env.docker.local.example`. `.env.example` documents `REDIS_URL` and `TEST_USER_*` but **not**
@@ -673,6 +708,35 @@ Signature verification is correct. Two gaps:
 - **No `LICENSE`** — fine for a private family project, worth adding if it ever goes public.
 - `VERSION` contains `0.1.0` and `package.json` says `0.1.0`, but nothing keeps them in sync. Have
   the build read `package.json` and delete `VERSION`, or add a check.
+
+### P10. `LocalStorageAdapter` and `MealFormInputs` disagree on the shape of `ingredients` — NEW (found 2026-08-02)
+
+Found while fixing P1's type-check coverage, not part of the original review.
+
+**Files:** `src/lib/data/adapters.ts` (`SupabaseAdapter.upsert`, `LocalStorageAdapter.upsert`/`getAll`,
+`localStorageMealSchema`), `src/components/meals/MealForm.tsx` (`mealSchema`)
+
+`mealSchema.ingredients` (and therefore `MealFormInputs.ingredients`) is a structured
+`{ name, quantity, unit }[]` — that's what the meal form's `useFieldArray` actually produces.
+`LocalStorageAdapter.upsert()` takes that array and writes it into `localStorage` unchanged. But
+`LocalStorageAdapter.getAll()` reads it back through `localStorageMealSchema`, which declares
+`ingredients: z.string().optional()` — a comma-separated string — and then hands the result to
+`parseIngredients()`, a hand-rolled string parser. An array value fails that Zod validation, and
+`getAll()` silently drops the whole meal with a `console.warn('Invalid meal data in localStorage:
+...')`. In practice: **any meal created or edited while signed out is likely to disappear from view
+the next time the meals list loads**, since the browser/localStorage path is exactly the
+unauthenticated path.
+
+**Fix:** Decide the one true shape for `ingredients` in localStorage (comma-separated string is
+simplest and is what `parseIngredients` already assumes) and serialize to it in
+`LocalStorageAdapter.upsert()` before writing, e.g. reusing the same joining logic implied by
+`parseIngredients`'s reverse direction. Add a test that does write-then-read through
+`LocalStorageAdapter` with a real structured `ingredients` array and asserts the meal survives
+`getAll()` — the current test suite never catches this because `adapters.test.ts`'s fixture happens
+to pass a pre-formatted string directly, bypassing the form layer entirely.
+
+**Verify:** Sign out, create a meal with 2+ ingredients via the form, refresh `/meals` — the meal
+must still be visible with its ingredients intact.
 
 ---
 
