@@ -203,7 +203,26 @@ user-supplied address.
 
 ---
 
-### S6. `/api/shared/[token]` is unauthenticated, service-role, and unthrottled
+### S6. `/api/shared/[token]` is unauthenticated, service-role, and unthrottled — ASSESSED, NOT CHANGED (2026-08-02)
+
+**Decided not to implement the "switch off service-role" half of this item.** Checked the actual RLS
+policies on `meals`, `meal_plans`, and `planned_meals`: all three are scoped strictly to
+`auth.uid() = user_id` (or an ownership chain through it), with zero anonymous-access path. An
+anonymous request under those policies returns nothing, so switching this route to an anon-key
+client would break the sharing feature outright — the RLS policies would need real anon-accessible
+grants on `meals`/`planned_meals` gated on "a valid, non-expired share exists for this meal plan",
+which is a genuine cross-table security design, not a config toggle. I have no Docker/local Supabase
+in this environment to actually test a new policy against, and getting it wrong risks either breaking
+sharing in production or opening broader anonymous read access than intended — worse than the status
+quo. Left the route on the service-role client with its existing app-layer expiry check, which is
+what production has been running. If you want this hardened properly, it needs to happen with a
+Supabase instance you can test the new policies against before they ship.
+
+Rate limiting was similarly not implemented — there's no rate-limiting infrastructure anywhere in
+this codebase (no Redis, no edge middleware for it), so adding one is a new feature, not a fix, and
+is out of scope for this pass.
+
+Original analysis kept below for reference.
 
 **File:** `src/app/api/shared/[token]/route.ts`
 
@@ -711,7 +730,31 @@ fails silently in one route and loudly in another.
 
 ---
 
-### P8. Stripe webhook is not idempotent and does not verify subscription→user linkage
+### P8. Stripe webhook is not idempotent — FIXED for retries (2026-08-02); linkage gap kept as-is
+
+Added `supabase/migrations/20260802000001_create_stripe_webhook_events.sql` — a small ledger table
+(`id text primary key`, the Stripe event id) with RLS enabled and no policies, so only the
+service-role client the webhook route already uses can touch it. **Not yet pushed to production** —
+same as the other migration in this pass, that needs your explicit go-ahead since it's a live-database
+change, and this one specifically must land *before* the updated route code is deployed (the route
+will 500 on every webhook if it queries a table that doesn't exist yet).
+
+Updated `src/app/api/stripe/webhook/route.ts`: right after signature verification, the handler now
+`insert`s the event id into `stripe_webhook_events` before the `switch`. A unique-violation (`23505`)
+means the event was already processed — short-circuits and returns `{ received: true, duplicate:
+true }` without touching `profiles`, so a retried `customer.subscription.deleted` arriving after the
+user already re-subscribed can no longer re-downgrade them. Any other error on that insert fails
+open (logs and continues to process) — a rare DB hiccup on the ledger table shouldn't drop a real
+billing event.
+
+Added `src/app/api/stripe/webhook/__tests__/route.test.ts` (5 tests, none existed before): signature
+checks, a new event processing normally, a duplicate short-circuiting before `profiles` is touched,
+and the fail-open path on an unrelated dedupe error.
+
+The second half of the original item (verifying `checkout.session.completed`'s
+`session.metadata.supabase_user_id` more thoroughly) was not changed — the payload is already
+signature-verified by Stripe, so the existing "log and `break`" on a missing user id is a reasonable,
+non-exploitable handling of what should be an impossible case.
 
 **File:** `src/app/api/stripe/webhook/route.ts`
 

@@ -40,6 +40,26 @@ export async function POST(req: NextRequest) {
 
   try {
     const supabaseAdmin = getSupabaseAdmin();
+
+    // Idempotency: Stripe retries webhook deliveries on timeout/5xx. Record
+    // this event id before processing; a unique-violation means it was
+    // already handled (e.g. a retried subscription.deleted arriving after
+    // the user already re-subscribed must not re-downgrade them).
+    const { error: dedupeError } = await supabaseAdmin
+      .from('stripe_webhook_events')
+      .insert({ id: event.id, type: event.type });
+
+    if (dedupeError) {
+      if (dedupeError.code === '23505') {
+        console.info(`Ignoring already-processed Stripe event ${event.id}`);
+        return NextResponse.json({ received: true, duplicate: true });
+      }
+      // Fail open on infra errors unrelated to duplication — dropping a
+      // real event because the ledger write hiccuped is worse than a rare
+      // double-processing.
+      console.error('Failed to record webhook event (continuing):', dedupeError);
+    }
+
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
