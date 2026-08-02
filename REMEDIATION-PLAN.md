@@ -150,7 +150,32 @@ count check at all, so the limit is advisory even without the backdoor.
 
 ---
 
-### S5. SSRF filter in the recipe scraper is bypassable
+### S5. SSRF filter in the recipe scraper is bypassable — FIXED (2026-08-02)
+
+Confirmed first that Node's own `URL` parser already canonicalizes decimal/octal/hex IPv4 literals
+and IPv4-mapped IPv6 addresses into standard form (`new URL('http://2130706433/').hostname` →
+`'127.0.0.1'`), so the real gaps were: no IPv6 handling at all, no `0.0.0.0`, no DNS resolution (a
+public-looking hostname pointing at a private IP sailed straight through), and no redirect handling
+(the check ran once on the original URL; `fetch` then followed redirects whever they pointed).
+
+Rewrote `src/lib/scraping/recipe-scraper.ts`:
+- `isValidUrl` is now async, checks IP literals directly, and resolves hostnames via
+  `dns.promises.lookup(host, { all: true })`, rejecting if *any* resolved address falls in loopback,
+  RFC1918, link-local/metadata (169.254.0.0/16), CGNAT (100.64.0.0/10), or `0.0.0.0/8`. Handles IPv6
+  loopback and IPv4-mapped IPv6 in both dotted and canonical hex form.
+- `fetch` now uses `redirect: 'manual'` and follows up to 3 hops itself, re-validating the target URL
+  at every hop — closes the "fetch just follows wherever" gap.
+- Rejects non-`text/html` responses by content-type, and caps the response body at 2MB by reading the
+  stream manually instead of buffering the whole thing via `response.text()`.
+- Added `src/lib/scraping/__tests__/recipe-scraper.test.ts` (15 new tests) covering all of the above,
+  including the exotic IP literal formats and DNS-rebinding-style scenarios (mocking `node:dns`).
+
+**Known remaining gap, documented in code comments:** this closes the DNS-resolves-to-private-IP hole
+but does not pin the actual `fetch` connection to the address that was validated — a genuine
+TOCTOU/rebinding attack (DNS answer changes between the check and the connection) is still
+theoretically possible. Full protection needs a custom fetch dispatcher that connects to the
+already-resolved IP; not implemented, since it would require replacing the global `fetch` with a
+custom `undici` agent and is a larger, separate piece of work.
 
 **File:** `src/lib/scraping/recipe-scraper.ts:21-57`
 
