@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Check, Plus, Trash2, RotateCcw, Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,13 +43,7 @@ export function StaplesManager({ onStaplesChange, className }: StaplesManagerPro
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // Load staples on mount
-    useEffect(() => {
-        loadStaples();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user]);
-
-    const loadStaples = async () => {
+    const loadStaples = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
@@ -91,7 +85,12 @@ export function StaplesManager({ onStaplesChange, className }: StaplesManagerPro
         } finally {
             setLoading(false);
         }
-    };
+    }, [user]);
+
+    // Load staples on mount
+    useEffect(() => {
+        loadStaples();
+    }, [loadStaples]);
 
     const saveStaples = async (newStaples: Staple[]) => {
         try {

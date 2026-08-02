@@ -665,7 +665,26 @@ image, so tracking them costs nothing at runtime.
 
 ---
 
-### P4. `src/app/planner/page.tsx` is a 936-line component with cyclomatic complexity 131
+### P4. `src/app/planner/page.tsx` is a 936-line component with cyclomatic complexity 131 — NOT ATTEMPTED, deliberately (2026-08-02)
+
+**Decided not to do this in this pass.** This is the single highest-risk, most invasive item in the
+entire plan — extracting `useWeekPlan`/`usePlannerFilters`/`useUndoableEdit`/`ReplaceMealDialog` out
+of the most complex component in the app. I already made one change to this exact file this session
+(C4, above) and could not get live browser verification working: the interactive login form-fill was
+correctly blocked by the safety classifier (entering credentials, even for a local test account, is
+restricted), and a fallback attempt to run the project's own Playwright e2e suite via `npx playwright
+test` stalled on a slow first-time Chromium binary download that didn't finish within a reasonable
+wait. Attempting a large structural refactor of the app's core planning feature on top of an already
+partially-unverified change, this late in a long session, is a poor risk/reward trade — a mistake here
+breaks the single most important interactive feature in the app, and the plan itself already called
+for doing this "one commit each, tests green between each," which really means a dedicated pass where
+each extraction step gets its own live check, not a batch squeezed in at the end of a much larger one.
+
+**If you want this done:** it's still the right refactor, and the extraction plan below is still
+sound. Do it as its own session, with `npx playwright install` run ahead of time (or Docker available)
+so each step can be verified against the running app before moving to the next.
+
+Original extraction plan, unexecuted:
 
 By a wide margin the most complex symbol in the codebase (next worst is 66). Eleven levels of
 nesting. It holds 12 `useState` hooks, drag-and-drop state, URL-param sync, suggestion filtering,
@@ -732,7 +751,18 @@ log from a plain informational one, which is real per-file work, not a global fi
 
 ---
 
-### P6. The four `eslint-disable react-hooks/exhaustive-deps` comments are hiding real bugs
+### P6. The four `eslint-disable react-hooks/exhaustive-deps` comments are hiding real bugs — 3 of 4 FIXED (2026-08-02)
+
+`ShoppingList.tsx`'s instance was resolved for free by deleting the file in batch 5 (D1) — it was
+dead code. Fixed `ProfileManagement.tsx` and `StaplesManager.tsx`: both had the exact same shape
+(an unmemoized `fetchProfile`/`loadStaples` function referenced from a `useEffect` that only ever
+called it once). Wrapped each in `useCallback` with the correct dependency (`user` in both cases) and
+added the function to the effect's dependency array — removes the disable comment entirely rather than
+suppressing the warning. Verified no other call sites existed for either function before changing
+them. `npx eslint` on both files now reports zero warnings.
+
+Left `planner/page.tsx:428`'s instance alone — per P4 above, that component needs the full extraction
+pass before this specific disable can be resolved properly rather than papered over.
 
 `planner/page.tsx:450`, `ProfileManagement.tsx:47`, `ShoppingList.tsx:68` (dead file — deleted by
 **D1**), `StaplesManager.tsx:49`.

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, FormEvent } from "react";
+import { useState, useEffect, useCallback, FormEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuthStore } from "@/store/auth";
 import Link from "next/link";
@@ -40,13 +40,7 @@ export default function ProfileManagement() {
   const [emailError, setEmailError] = useState<string | null>(null);
   const [showRefreshHint, setShowRefreshHint] = useState(false);
 
-  useEffect(() => {
-    if (user) {
-      fetchProfile();
-    }
-  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     if (!user) return;
     
     setInitialLoading(true);
@@ -89,7 +83,13 @@ export default function ProfileManagement() {
       setMeasurementSystem(data.measurement_system || "metric");
     }
     setInitialLoading(false);
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      fetchProfile();
+    }
+  }, [user, fetchProfile]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
