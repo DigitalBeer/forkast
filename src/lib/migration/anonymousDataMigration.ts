@@ -12,7 +12,6 @@ interface LocalStorageMeal {
   ingredients?: string;
   instructions?: string;
   image_url?: string;
-  dietary_tags?: string[];
   created_at?: string;
 }
 
@@ -74,7 +73,6 @@ export async function migrateAnonymousData(userId: string): Promise<{
           ingredients: meal.ingredients || '',
           instructions: meal.instructions || '',
           image_url: meal.image_url,
-          dietary_tags: meal.dietary_tags || [],
         }));
 
         const { data, error } = await supabase

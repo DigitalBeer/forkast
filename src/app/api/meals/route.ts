@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { FREE_TIER_MEAL_LIMIT } from '@/lib/subscription';
-import type { PostgrestError } from '@supabase/supabase-js';
 
 export async function GET() {
   try {
@@ -35,12 +34,10 @@ export async function GET() {
       const mapped = {
         ...m,
         id: m.id?.toString?.() ?? String(m.id),
-        tags: (m as { dietary_tags?: string[] | null }).dietary_tags ?? [],
-        sourceUrl:
-          (m as { source_url?: string | null }).source_url ?? undefined,
+        tags: (m as { tags?: string[] | null }).tags ?? [],
+        sourceUrl: (m as { source_url?: string | null }).source_url ?? undefined,
       } as Record<string, unknown>;
 
-      delete (mapped as { dietary_tags?: unknown }).dietary_tags;
       delete (mapped as { source_url?: unknown }).source_url;
 
       return mapped;
@@ -86,7 +83,7 @@ export async function PATCH(req: NextRequest) {
     if (body.name !== undefined) updates.name = body.name;
     if (body.description !== undefined) updates.description = body.description;
     if (body.meal_type !== undefined) updates.meal_type = body.meal_type;
-    if (body.tags !== undefined) updates.dietary_tags = body.tags;
+    if (body.tags !== undefined) updates.tags = body.tags;
     if (body.sourceUrl !== undefined) updates.source_url = body.sourceUrl;
     if (body.image_url !== undefined) updates.image_url = body.image_url;
 
@@ -117,7 +114,7 @@ export async function PATCH(req: NextRequest) {
         id:
           (record as { id?: unknown }).id?.toString?.() ??
           String((record as { id?: unknown }).id),
-        tags: (record as { dietary_tags?: string[] | null }).dietary_tags ?? [],
+        tags: (record as { tags?: string[] | null }).tags ?? [],
         sourceUrl:
           (record as { source_url?: string | null }).source_url ?? undefined,
       },
@@ -217,7 +214,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const basePayload: Record<string, unknown> = {
+    const payload: Record<string, unknown> = {
       id: id ? (Number.isFinite(Number(id)) ? Number(id) : id) : undefined,
       user_id: user.id,
       name,
@@ -226,82 +223,15 @@ export async function POST(req: NextRequest) {
       ingredients,
       instructions,
       image_url,
-    };
-
-    const payloadWithDietaryTags: Record<string, unknown> = {
-      ...basePayload,
-      dietary_tags: tags,
-      source_url,
-    };
-
-    const payloadWithTagsSnake: Record<string, unknown> = {
-      ...basePayload,
       tags,
       source_url,
     };
 
-    const payloadWithTagsCamel: Record<string, unknown> = {
-      ...basePayload,
-      tags,
-      sourceUrl: source_url,
-    };
-
-    const payloadMinimal: Record<string, unknown> = {
-      ...basePayload,
-      source_url,
-    };
-
-    let meal: unknown;
-    let upsertError: PostgrestError | null = null;
-
-    {
-      const result = await supabase
-        .from('meals')
-        .upsert(payloadWithDietaryTags)
-        .select('*')
-        .single();
-      meal = result.data;
-      upsertError = result.error;
-    }
-
-    if (upsertError?.code === 'PGRST204') {
-      const missingColumn = upsertError.message || '';
-      if (missingColumn.includes('dietary_tags')) {
-        const retry = await supabase
-          .from('meals')
-          .upsert(payloadWithTagsSnake)
-          .select('*')
-          .single();
-        meal = retry.data;
-        upsertError = retry.error;
-      }
-
-      if (
-        upsertError?.code === 'PGRST204' &&
-        (upsertError.message || '').includes('tags')
-      ) {
-        const retry = await supabase
-          .from('meals')
-          .upsert(payloadMinimal)
-          .select('*')
-          .single();
-        meal = retry.data;
-        upsertError = retry.error;
-      }
-
-      if (
-        upsertError?.code === 'PGRST204' &&
-        (upsertError.message || '').includes('source_url')
-      ) {
-        const retry = await supabase
-          .from('meals')
-          .upsert(payloadWithTagsCamel)
-          .select('*')
-          .single();
-        meal = retry.data;
-        upsertError = retry.error;
-      }
-    }
+    const { data: meal, error: upsertError } = await supabase
+      .from('meals')
+      .upsert(payload)
+      .select('*')
+      .single();
 
     if (upsertError) {
       console.error('Error saving meal:', upsertError);
@@ -318,14 +248,9 @@ export async function POST(req: NextRequest) {
         id:
           (record as { id?: unknown }).id?.toString?.() ??
           String((record as { id?: unknown }).id),
-        tags:
-          (record as { dietary_tags?: string[] | null }).dietary_tags ??
-          (record as { tags?: string[] | null }).tags ??
-          [],
+        tags: (record as { tags?: string[] | null }).tags ?? [],
         sourceUrl:
-          (record as { source_url?: string | null }).source_url ??
-          (record as { sourceUrl?: string | null }).sourceUrl ??
-          undefined,
+          (record as { source_url?: string | null }).source_url ?? undefined,
       },
       { status: 200 },
     );

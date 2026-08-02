@@ -30,7 +30,6 @@ export async function PUT(
       .from('meals')
       .update({
         last_prepared: date || new Date().toISOString(),
-        updated_at: new Date().toISOString(),
       })
       .eq('id', id)
       .eq('user_id', user.id)

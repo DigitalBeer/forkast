@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
         image_url: imageUrl || null,
         meal_type: mealType || 'Dinner',
         description: 'Added from recommendations',
-        dietary_tags: [],
+        tags: [],
       })
       .select('id, name, image_url, meal_type')
       .single();

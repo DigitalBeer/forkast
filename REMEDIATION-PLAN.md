@@ -200,7 +200,32 @@ before (`e2e/meal-plan-sharing.spec.ts` covers this).
 
 ## Tier 1 — Broken or incoherent code
 
-### C1. Schema drift: the code cannot decide whether the column is `tags` or `dietary_tags`
+### C1. Schema drift: the code cannot decide whether the column is `tags` or `dietary_tags` — FIXED (2026-08-02)
+
+**Resolved during implementation.** Introspected the live production schema read-only via the
+PostgREST OpenAPI endpoint (no Docker/psql available, so `supabase db diff`/`dump` couldn't run) and
+confirmed `meals` already has `tags`, not `dietary_tags` — the migration was simply never updated
+after someone renamed the column directly on the live DB. Also found in the same pass: `last_prepared`
+and `usage_count` exist in production with no migration ever creating them, and the migration folder
+is broken if replayed from scratch (`20250107000000` does `ADD COLUMN meal_type` without
+`IF NOT EXISTS`, but `20250101000000` already creates that column — this would fail on a fresh
+`supabase db reset`). Fixed all of it:
+- `supabase/migrations/20250107000000_add_meal_type_column.sql`: added `IF NOT EXISTS`.
+- New `supabase/migrations/20260802000000_sync_meals_table_with_production.sql`: idempotent
+  `dietary_tags`→`tags` rename guard (no-ops on prod, fixes fresh installs) plus
+  `last_prepared`/`usage_count` column adds. **Not yet pushed to the live database** — that's a
+  production-affecting action and needs an explicit decision, not something to do silently.
+- `src/app/api/meals/route.ts`: deleted the entire four-payload retry ladder; one `tags`/`source_url`
+  payload, one upsert.
+- `src/app/api/recommendations/add/route.ts`, `src/lib/migration/anonymousDataMigration.ts`: both
+  wrote a `dietary_tags` field that doesn't exist in production, so both inserts were silently
+  failing with a PGRST204 error before this fix.
+- `src/app/api/meals/[id]/prepare/route.ts`: also removed an `updated_at` write — that column does
+  not exist on `meals` either, so the route (already fixed for auth in batch 1) was still going to
+  500 on every real call until this.
+- Test fixtures in `src/app/api/meals/__tests__/route.test.ts` updated from `dietary_tags` to `tags`.
+
+Original analysis below, left for context.
 
 **Files:** `supabase/migrations/20250101000000_create_meals_table.sql:18`,
 `src/app/api/meals/route.ts:190-300`, `src/lib/data/adapters.ts:~68`,

@@ -113,7 +113,7 @@ describe('GET /api/meals', () => {
       {
         id: 1,
         name: 'Pasta',
-        dietary_tags: ['vegan'],
+        tags: ['vegan'],
         source_url: 'https://example.com',
       },
     ];
@@ -198,7 +198,7 @@ describe('POST /api/meals', () => {
     const returnedMeal = {
       id: 42,
       name: 'Test Meal',
-      dietary_tags: ['vegan'],
+      tags: ['vegan'],
       source_url: null,
     };
     mockSupabase.from.mockImplementation(
@@ -282,7 +282,7 @@ describe('POST /api/meals', () => {
     const returnedMeal = {
       id: 43,
       name: 'Premium Meal',
-      dietary_tags: [],
+      tags: [],
       source_url: null,
     };
     mockSupabase.from.mockImplementation(
@@ -311,7 +311,7 @@ describe('POST /api/meals', () => {
     const returnedMeal = {
       id: 42,
       name: 'Edited Meal',
-      dietary_tags: [],
+      tags: [],
       source_url: null,
     };
     const profileChain = mockProfileChain({ subscription_status: 'free' });
@@ -400,7 +400,7 @@ describe('PATCH /api/meals', () => {
       id: 42,
       name: 'Pasta',
       image_url: null,
-      dietary_tags: [],
+      tags: [],
       source_url: null,
     };
     mockSupabase.from.mockReturnValue(mockUpdateChain(updatedMeal, null));
@@ -449,7 +449,7 @@ describe('PATCH /api/meals', () => {
       id: 42,
       name: 'Pasta',
       image_url: null,
-      dietary_tags: [],
+      tags: [],
       source_url: null,
     };
     const mockFrom = mockUpdateChain(updatedMeal, null);
