@@ -15,8 +15,8 @@ import {
 
 const links = [
   { href: '/', label: 'Dashboard' },
-  { href: '/plan', label: 'Plan' },
-  { href: '/planner', label: 'Planner' },
+  { href: '/plan', label: 'This Week' },
+  { href: '/planner', label: 'Build a Plan' },
   { href: '/meal-plans/history', label: 'Saved Plans' },
   { href: '/meals', label: 'Meals' },
   { href: '/meals/new', label: 'New Meal' },

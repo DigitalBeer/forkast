@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { logError } from '@/lib/logger';
 
 export async function PUT(
   request: NextRequest,
@@ -37,7 +38,7 @@ export async function PUT(
       .single();
 
     if (error) {
-      console.error('Error updating meal prepared date:', error);
+      logError('PUT /api/meals/[id]/prepare', error);
       return NextResponse.json(
         { error: 'Failed to update meal' },
         { status: 500 },
@@ -46,7 +47,7 @@ export async function PUT(
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
-    console.error('Error in update meal prepared date API:', error);
+    logError('PUT /api/meals/[id]/prepare', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 },

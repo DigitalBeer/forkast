@@ -450,7 +450,13 @@ contains behaviour the newer components lack (check the "have it" / staples hand
 
 ---
 
-### D3. Decide what `/plan` and `/planner` each are
+### D3. Decide what `/plan` and `/planner` each are — FIXED (2026-08-02)
+
+Renamed the nav labels in `src/components/layout/NavBar.tsx`: "Plan" → "This Week" (`/plan`, the
+read-only view), "Planner" → "Build a Plan" (`/planner`, the drag-and-drop editor). Checked
+`src/app/page.tsx`'s own links to both routes ("Plan New Week" → `/planner`, "View Full Plan →" →
+`/plan`) — those are already contextually clear as written, so left unchanged. Confirmed via grep
+that no e2e spec asserts on the old "Plan"/"Planner" nav text.
 
 Both routes exist, both are in the nav bar (`src/components/layout/NavBar.tsx:18-19` — "Plan" and
 "Planner"), and no user can tell them apart from those labels. `/plan` (229 lines) is a read-only
@@ -657,7 +663,32 @@ The same treatment applies, less urgently, to `ProfileManagement.tsx` (complexit
 
 ---
 
-### P5. 147 `console.*` calls in production source, and Sentry is barely wired up
+### P5. 147 `console.*` calls in production source, and Sentry is barely wired up — PARTIALLY DONE, scope deliberately narrowed (2026-08-02)
+
+**Scope decision:** 147 call sites across ~40 files is a lot of surface area to touch reliably without
+being able to trigger real errors against a live Sentry project to confirm end-to-end delivery. Built
+the infrastructure fully and converted the routes most relevant to the security work already done
+this session, rather than attempt all 147 and risk a partial, inconsistent sweep late in a long pass.
+
+Done:
+- Added `src/lib/logger.ts` — `logError(context, error)` reports to Sentry always and to the console
+  outside production only, and never logs a raw error object (only `.message`/`.code`, per the
+  original concern about leaking query fragments from Supabase errors); `logWarn(context, message)`
+  for non-exception conditions worth tracking.
+- `ErrorBoundary.componentDidCatch` now calls `Sentry.captureException` — the literal `// TODO: Send
+  to error tracking service` this item named is resolved.
+- Converted `src/app/api/meals/[id]/prepare/route.ts`, `src/app/api/meals/route.ts`,
+  `src/app/api/stripe/webhook/route.ts`, `src/lib/scraping/recipe-scraper.ts`, and
+  `src/app/api/shared/[token]/route.ts` — chosen because they were the files touched by S1/S5/S6/P8
+  this session, so verifying the logger against routes I already understood in depth was lower-risk
+  than picking arbitrarily. Kept the webhook's `console.info` success breadcrumbs as plain
+  `console.info` rather than routing them through Sentry as messages — reporting every successful
+  webhook to Sentry would just be noise.
+
+**Not done — remaining ~130 call sites across the rest of `src/app/api/**` and `src/lib/**`.** The
+pattern is now established (`logError`/`logWarn` in `src/lib/logger.ts`); doing the rest is
+genuinely mechanical from here, but doing it well means reading each call site to tell an exception
+log from a plain informational one, which is real per-file work, not a global find-replace.
 
 `@sentry/nextjs` is installed and three config files exist, but `ErrorBoundary.tsx:30` still says
 `// TODO: Send to error tracking service` and every error path in every API route uses

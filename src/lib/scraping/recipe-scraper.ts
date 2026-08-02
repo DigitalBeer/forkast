@@ -9,6 +9,7 @@ import { parseSchemaOrgRecipe } from './parsers/schema-org';
 import { parseHtmlFallback } from './parsers/html-fallback';
 import type { ScrapingResult, ScrapedRecipe, ScrapingError } from './types';
 import { ScrapingErrorCode, ScrapingErrorMessages } from './types';
+import { logError } from '@/lib/logger';
 
 // User-Agents to avoid being blocked by recipe sites
 const USER_AGENTS = [
@@ -268,7 +269,7 @@ export async function scrapeRecipe(url: string): Promise<ScrapingResult> {
       };
     }
 
-    console.error('Recipe scraping error:', error);
+    logError('scrapeRecipe', error);
     return {
       success: false,
       error: {

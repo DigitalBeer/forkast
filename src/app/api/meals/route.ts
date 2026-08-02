@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { FREE_TIER_MEAL_LIMIT } from '@/lib/subscription';
 import { toDbMealId } from '@/lib/utils';
+import { logError } from '@/lib/logger';
 
 export async function GET() {
   try {
@@ -24,7 +25,7 @@ export async function GET() {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching meals:', error);
+      logError('GET /api/meals', error);
       return NextResponse.json(
         { error: 'Failed to fetch meals' },
         { status: 500 },
@@ -46,7 +47,7 @@ export async function GET() {
 
     return NextResponse.json(normalized, { status: 200 });
   } catch (error) {
-    console.error('Error in GET /api/meals:', error);
+    logError('GET /api/meals', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 },
@@ -97,7 +98,7 @@ export async function PATCH(req: NextRequest) {
       .single();
 
     if (updateError) {
-      console.error('Error updating meal:', updateError);
+      logError('PATCH /api/meals', updateError);
       return NextResponse.json(
         { error: updateError.message || 'Failed to update meal' },
         { status: 500 },
@@ -122,7 +123,7 @@ export async function PATCH(req: NextRequest) {
       { status: 200 },
     );
   } catch (error) {
-    console.error('Error in PATCH /api/meals:', error);
+    logError('PATCH /api/meals', error);
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : 'Internal server error',
@@ -235,7 +236,7 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (upsertError) {
-      console.error('Error saving meal:', upsertError);
+      logError('POST /api/meals', upsertError);
       return NextResponse.json(
         { error: upsertError.message || 'Failed to save meal' },
         { status: 500 },
@@ -256,7 +257,7 @@ export async function POST(req: NextRequest) {
       { status: 200 },
     );
   } catch (error) {
-    console.error('Error in POST /api/meals:', error);
+    logError('POST /api/meals', error);
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : 'Internal server error',
