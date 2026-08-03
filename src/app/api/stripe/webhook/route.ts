@@ -3,6 +3,7 @@ import { headers } from 'next/headers';
 import { stripe, STRIPE_WEBHOOK_SECRET } from '@/lib/stripe';
 import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
+import { logError, logWarn } from '@/lib/logger';
 
 function getSupabaseAdmin() {
   return createClient(
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest) {
       STRIPE_WEBHOOK_SECRET,
     );
   } catch (err) {
-    console.error('Webhook signature verification failed:', err);
+    logError('POST /api/stripe/webhook (signature)', err);
     return NextResponse.json(
       { error: 'Webhook signature verification failed' },
       { status: 400 },
@@ -40,13 +41,33 @@ export async function POST(req: NextRequest) {
 
   try {
     const supabaseAdmin = getSupabaseAdmin();
+
+    // Idempotency: Stripe retries webhook deliveries on timeout/5xx. Record
+    // this event id before processing; a unique-violation means it was
+    // already handled (e.g. a retried subscription.deleted arriving after
+    // the user already re-subscribed must not re-downgrade them).
+    const { error: dedupeError } = await supabaseAdmin
+      .from('stripe_webhook_events')
+      .insert({ id: event.id, type: event.type });
+
+    if (dedupeError) {
+      if (dedupeError.code === '23505') {
+        console.info(`Ignoring already-processed Stripe event ${event.id}`);
+        return NextResponse.json({ received: true, duplicate: true });
+      }
+      // Fail open on infra errors unrelated to duplication — dropping a
+      // real event because the ledger write hiccuped is worse than a rare
+      // double-processing.
+      logError('POST /api/stripe/webhook (dedupe)', dedupeError);
+    }
+
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
         const userId = session.metadata?.supabase_user_id;
 
         if (!userId) {
-          console.error('No user ID in session metadata');
+          logWarn('POST /api/stripe/webhook', 'checkout.session.completed with no user ID in metadata');
           break;
         }
 
@@ -75,7 +96,7 @@ export async function POST(req: NextRequest) {
           .single();
 
         if (!profile) {
-          console.error('No profile found for customer:', customerId);
+          logWarn('POST /api/stripe/webhook', `No profile found for Stripe customer ${customerId}`);
           break;
         }
 
@@ -111,7 +132,7 @@ export async function POST(req: NextRequest) {
           .single();
 
         if (!profile) {
-          console.error('No profile found for customer:', customerId);
+          logWarn('POST /api/stripe/webhook', `No profile found for Stripe customer ${customerId}`);
           break;
         }
 
@@ -139,7 +160,7 @@ export async function POST(req: NextRequest) {
           .single();
 
         if (profile) {
-          console.warn(`Payment failed for user ${profile.id}`);
+          logWarn('POST /api/stripe/webhook', `Payment failed for user ${profile.id}`);
           // TODO: Send email notification
         }
         break;
@@ -151,7 +172,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ received: true });
   } catch (error) {
-    console.error('Error processing webhook:', error);
+    logError('POST /api/stripe/webhook', error);
     return NextResponse.json(
       { error: 'Webhook processing failed' },
       { status: 500 },

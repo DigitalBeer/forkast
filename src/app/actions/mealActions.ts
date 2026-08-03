@@ -4,6 +4,7 @@ import { duplicateMeal as duplicateMealInDb } from "@/lib/data/meals";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { revalidatePath as nextRevalidatePath } from "next/cache";
 import type { StorableMeal } from "@/lib/data/meals";
+import { isValidMealId, toDbMealId } from "@/lib/utils";
 
 // Define response types for better type safety
 export interface DeleteMealResponse {
@@ -30,12 +31,10 @@ export async function deleteMealAction(
     };
   }
 
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  const numericIdRegex = /^\d+$/;
-  if (!uuidRegex.test(mealId) && !numericIdRegex.test(mealId)) {
-    return { 
-      success: false, 
-      error: "Invalid meal ID format." 
+  if (!isValidMealId(mealId)) {
+    return {
+      success: false,
+      error: "Invalid meal ID format."
     };
   }
 
@@ -52,7 +51,7 @@ export async function deleteMealAction(
       };
     }
 
-    const normalizedId = numericIdRegex.test(mealId) ? Number(mealId) : mealId;
+    const normalizedId = toDbMealId(mealId);
 
     const { data: deletedRows, error: deleteError } = await supabase
       .from("meals")
@@ -113,12 +112,10 @@ export async function duplicateMealAction(
     };
   }
 
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  const numericIdRegex = /^\d+$/;
-  if (!uuidRegex.test(mealId) && !numericIdRegex.test(mealId)) {
-    return { 
-      success: false, 
-      error: "Invalid meal ID format." 
+  if (!isValidMealId(mealId)) {
+    return {
+      success: false,
+      error: "Invalid meal ID format."
     };
   }
 
@@ -127,9 +124,16 @@ export async function duplicateMealAction(
   const isAuthenticated = !!session;
   const userId = session?.user?.id;
 
+  if (!isAuthenticated || !userId) {
+    return {
+      success: false,
+      error: "Unauthorized",
+    };
+  }
+
   try {
-    const result = await duplicateMealInDb(mealId, isAuthenticated, userId);
-    
+    const result = await duplicateMealInDb(mealId, isAuthenticated, userId, supabase);
+
     if (!result.success) {
       return {
         success: false,

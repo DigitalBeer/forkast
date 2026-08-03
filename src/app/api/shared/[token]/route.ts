@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { logError } from '@/lib/logger';
 
 function getSupabaseAdmin() {
   return createClient(
@@ -10,11 +11,11 @@ function getSupabaseAdmin() {
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: Promise<{ token: string }> },
+  { params }: { params: { token: string } },
 ) {
   try {
     const supabase = getSupabaseAdmin();
-    const { token } = await params;
+    const { token } = params;
 
     if (!token) {
       return NextResponse.json({ error: 'Token is required' }, { status: 400 });
@@ -73,7 +74,7 @@ export async function GET(
       .order('meal_type');
 
     if (mealsError) {
-      console.error('Error fetching planned meals:', mealsError);
+      logError('GET /api/shared/[token]', mealsError);
       return NextResponse.json(
         { error: 'Failed to fetch meal plan data' },
         { status: 500 },
@@ -134,7 +135,7 @@ export async function GET(
       meals: mealsByDate,
     });
   } catch (error) {
-    console.error('Error in shared meal plan fetch:', error);
+    logError('GET /api/shared/[token]', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 },

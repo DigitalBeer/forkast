@@ -36,18 +36,10 @@ module.exports = {
     'node_modules/',
     '.next/',
     'test-next-app/',
-    'src/lib/data/__tests__/',
     'playwright-report/',
     'test-results/',
     'e2e/logs/',
-    'tests/',
-    'e2e/',
     'coverage/',
-    '**/__tests__/',
-    '**/*.test.ts',
-    '**/*.test.tsx',
-    '**/*.spec.ts',
-    '**/*.spec.tsx',
   ],
   overrides: [
     {
@@ -55,6 +47,22 @@ module.exports = {
       files: ['*.js'],
       rules: {
         '@typescript-eslint/no-var-requires': 'off',
+      },
+    },
+    {
+      // Test code legitimately does things production code shouldn't:
+      // loose mock typing, intentionally-unused destructured values, etc.
+      files: [
+        '**/__tests__/**',
+        '**/*.test.ts',
+        '**/*.test.tsx',
+        '**/*.spec.ts',
+        '**/*.spec.tsx',
+        'e2e/**',
+        'tests/**',
+      ],
+      rules: {
+        '@typescript-eslint/no-explicit-any': 'off',
       },
     },
   ],

@@ -3,6 +3,7 @@ import type { MealFormInputs } from "@/components/meals/MealForm";
 import type { Meal } from "@/types/meal";
 import { MEAL_TYPES } from "@/types/meal";
 import { z } from "zod";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 // Define schema for LocalStorage format to ensure type safety
 const localStorageMealSchema = z.object({
@@ -35,8 +36,21 @@ export interface StorageAdapter {
 // --- Supabase Adapter --- //
 
 class SupabaseAdapter implements StorageAdapter {
+  private client?: SupabaseClient;
+
+  // Accepts an injected Supabase client (e.g. a server client from a server
+  // action) so this adapter also works outside the browser. Defaults to the
+  // browser client for existing client-side callers.
+  constructor(client?: SupabaseClient) {
+    this.client = client;
+  }
+
+  private getClient(): SupabaseClient {
+    return this.client ?? createClient();
+  }
+
   async upsert(data: MealFormInputs, id?: string, userId?: string) {
-    const supabase = createClient();
+    const supabase = this.getClient();
 
     // Prefer an already-uploaded URL (set by the /api/upload/meal-image endpoint)
     let imageUrl: string | undefined = (data as { image_url?: string }).image_url || undefined;
@@ -75,14 +89,14 @@ class SupabaseAdapter implements StorageAdapter {
   }
 
   async get(id: string) {
-    const supabase = createClient();
+    const supabase = this.getClient();
     const { data, error } = await supabase.from("meals").select("*").eq("id", id).maybeSingle();
     if (error) throw error;
     return data as StorableMeal | undefined;
   }
 
   async getAll(): Promise<Meal[]> {
-    const supabase = createClient();
+    const supabase = this.getClient();
     const { data, error } = await supabase.from("meals").select("*");
     if (error) throw error;
     // The data from supabase is the full Meal object, so we can cast it directly.
@@ -90,7 +104,7 @@ class SupabaseAdapter implements StorageAdapter {
   }
 
   async delete(id: string) {
-    const supabase = createClient();
+    const supabase = this.getClient();
     const { error } = await supabase.from("meals").delete().eq("id", id);
     if (error) throw error;
   }
@@ -100,7 +114,12 @@ class SupabaseAdapter implements StorageAdapter {
 
 class LocalStorageAdapter implements StorageAdapter {
   private readLocal(): StorableMeal[] {
-    if (typeof window === "undefined") return [];
+    if (typeof window === "undefined") {
+      throw new Error(
+        "LocalStorageAdapter cannot be used outside the browser. " +
+        "Server code must use SupabaseAdapter with an authenticated user.",
+      );
+    }
     try {
       return JSON.parse(localStorage.getItem(LOCAL_KEY) ?? "[]");
     } catch {
@@ -109,7 +128,12 @@ class LocalStorageAdapter implements StorageAdapter {
   }
 
   private writeLocal(meals: StorableMeal[]) {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined") {
+      throw new Error(
+        "LocalStorageAdapter cannot be used outside the browser. " +
+        "Server code must use SupabaseAdapter with an authenticated user.",
+      );
+    }
     localStorage.setItem(LOCAL_KEY, JSON.stringify(meals));
   }
 
@@ -196,9 +220,9 @@ class LocalStorageAdapter implements StorageAdapter {
 
 // --- Factory --- //
 
-function getMealAdapter(isAuthenticated: boolean): StorageAdapter {
+function getMealAdapter(isAuthenticated: boolean, client?: SupabaseClient): StorageAdapter {
   if (isAuthenticated) {
-    return new SupabaseAdapter();
+    return new SupabaseAdapter(client);
   }
   return new LocalStorageAdapter();
 }

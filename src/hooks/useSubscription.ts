@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { FREE_TIER_MEAL_LIMIT } from '@/lib/subscription';
 
-export const FREE_TIER_MEAL_LIMIT = 42;
+export { FREE_TIER_MEAL_LIMIT };
 
 interface SubscriptionStatus {
   isPremium: boolean;
@@ -22,17 +23,6 @@ export function useSubscription(): SubscriptionStatus {
 
   useEffect(() => {
     async function checkSubscription() {
-      if (typeof window !== 'undefined' && window.navigator.webdriver) {
-        setStatus({
-          isPremium: true,
-          mealCount: 0,
-          mealLimit: Infinity,
-          canAddMeals: true,
-          loading: false,
-        });
-        return;
-      }
-
       try {
         const supabase = createClient();
         

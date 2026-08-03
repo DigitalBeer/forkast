@@ -46,6 +46,46 @@ function mockUpsertChain(
   };
 }
 
+function mockProfileChain(data: unknown, error: null | { message: string } = null) {
+  return {
+    select: vi.fn().mockReturnValue({
+      eq: vi.fn().mockReturnValue({
+        single: vi.fn().mockResolvedValue({ data, error }),
+      }),
+    }),
+  };
+}
+
+// Combined chain for the `meals` table on the create path: supports both the
+// free-tier count check (`select().eq()`) and the write (`upsert().select().single()`).
+function mockMealsCreateChain({
+  count = 0,
+  upsertData,
+  upsertError = null,
+}: {
+  count?: number;
+  upsertData?: unknown;
+  upsertError?: null | { code?: string; message: string };
+}) {
+  return {
+    select: vi.fn().mockReturnValue({
+      eq: vi.fn().mockResolvedValue({ count, error: null }),
+    }),
+    upsert: vi.fn().mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        single: vi.fn().mockResolvedValue({ data: upsertData, error: upsertError }),
+      }),
+    }),
+  };
+}
+
+function mockFromByTable(
+  chains: Record<string, unknown>,
+  fallback: unknown,
+) {
+  return (table: string) => chains[table] ?? fallback;
+}
+
 describe('GET /api/meals', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -73,7 +113,7 @@ describe('GET /api/meals', () => {
       {
         id: 1,
         name: 'Pasta',
-        dietary_tags: ['vegan'],
+        tags: ['vegan'],
         source_url: 'https://example.com',
       },
     ];
@@ -158,10 +198,15 @@ describe('POST /api/meals', () => {
     const returnedMeal = {
       id: 42,
       name: 'Test Meal',
-      dietary_tags: ['vegan'],
+      tags: ['vegan'],
       source_url: null,
     };
-    mockSupabase.from.mockReturnValue(mockUpsertChain(returnedMeal, null));
+    mockSupabase.from.mockImplementation(
+      mockFromByTable(
+        { profiles: mockProfileChain({ subscription_status: 'free' }) },
+        mockMealsCreateChain({ count: 5, upsertData: returnedMeal }),
+      ),
+    );
 
     const req = new Request('http://localhost/api/meals', {
       method: 'POST',
@@ -183,8 +228,14 @@ describe('POST /api/meals', () => {
       error: null,
     });
 
-    mockSupabase.from.mockReturnValue(
-      mockUpsertChain(null, { code: '23505', message: 'duplicate key' }),
+    mockSupabase.from.mockImplementation(
+      mockFromByTable(
+        { profiles: mockProfileChain({ subscription_status: 'free' }) },
+        mockMealsCreateChain({
+          count: 5,
+          upsertError: { code: '23505', message: 'duplicate key' },
+        }),
+      ),
     );
 
     const req = new Request('http://localhost/api/meals', {
@@ -195,6 +246,92 @@ describe('POST /api/meals', () => {
       req as unknown as import('next/server').NextRequest,
     );
     expect(response.status).toBe(500);
+  });
+
+  it('returns 403 when a free-tier user has reached the meal limit', async () => {
+    mockSupabase.auth.getSession.mockResolvedValue({
+      data: { session: { user: { id: 'user-1' } } },
+      error: null,
+    });
+
+    mockSupabase.from.mockImplementation(
+      mockFromByTable(
+        { profiles: mockProfileChain({ subscription_status: 'free' }) },
+        mockMealsCreateChain({ count: 42 }),
+      ),
+    );
+
+    const req = new Request('http://localhost/api/meals', {
+      method: 'POST',
+      body: JSON.stringify({ name: 'One Too Many' }),
+    });
+    const response = await POST(
+      req as unknown as import('next/server').NextRequest,
+    );
+    const json = await response.json();
+    expect(response.status).toBe(403);
+    expect(json.code).toBe('MEAL_LIMIT_REACHED');
+  });
+
+  it('does not enforce the meal limit for premium users', async () => {
+    mockSupabase.auth.getSession.mockResolvedValue({
+      data: { session: { user: { id: 'user-1' } } },
+      error: null,
+    });
+
+    const returnedMeal = {
+      id: 43,
+      name: 'Premium Meal',
+      tags: [],
+      source_url: null,
+    };
+    mockSupabase.from.mockImplementation(
+      mockFromByTable(
+        { profiles: mockProfileChain({ subscription_status: 'premium' }) },
+        mockMealsCreateChain({ count: 100, upsertData: returnedMeal }),
+      ),
+    );
+
+    const req = new Request('http://localhost/api/meals', {
+      method: 'POST',
+      body: JSON.stringify({ name: 'Premium Meal' }),
+    });
+    const response = await POST(
+      req as unknown as import('next/server').NextRequest,
+    );
+    expect(response.status).toBe(200);
+  });
+
+  it('does not check the meal limit when editing an existing meal', async () => {
+    mockSupabase.auth.getSession.mockResolvedValue({
+      data: { session: { user: { id: 'user-1' } } },
+      error: null,
+    });
+
+    const returnedMeal = {
+      id: 42,
+      name: 'Edited Meal',
+      tags: [],
+      source_url: null,
+    };
+    const profileChain = mockProfileChain({ subscription_status: 'free' });
+    mockSupabase.from.mockImplementation(
+      mockFromByTable(
+        { profiles: profileChain },
+        mockUpsertChain(returnedMeal, null),
+      ),
+    );
+
+    const req = new Request('http://localhost/api/meals', {
+      method: 'POST',
+      body: JSON.stringify({ id: '42', name: 'Edited Meal' }),
+    });
+    const response = await POST(
+      req as unknown as import('next/server').NextRequest,
+    );
+    expect(response.status).toBe(200);
+    // profiles should never be queried on the edit path
+    expect(profileChain.select).not.toHaveBeenCalled();
   });
 });
 
@@ -263,7 +400,7 @@ describe('PATCH /api/meals', () => {
       id: 42,
       name: 'Pasta',
       image_url: null,
-      dietary_tags: [],
+      tags: [],
       source_url: null,
     };
     mockSupabase.from.mockReturnValue(mockUpdateChain(updatedMeal, null));
@@ -312,7 +449,7 @@ describe('PATCH /api/meals', () => {
       id: 42,
       name: 'Pasta',
       image_url: null,
-      dietary_tags: [],
+      tags: [],
       source_url: null,
     };
     const mockFrom = mockUpdateChain(updatedMeal, null);

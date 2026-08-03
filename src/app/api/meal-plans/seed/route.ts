@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { format, addDays, startOfWeek } from 'date-fns';
+import { toDbMealType } from '@/types/meal';
 
 export async function POST() {
   try {
@@ -53,7 +54,7 @@ export async function POST() {
     const days = Array.from({ length: 7 }, (_, i) =>
       format(addDays(new Date(weekStart), i), 'yyyy-MM-dd'),
     );
-    const mealTypes = ['breakfast', 'lunch', 'dinner'];
+    const mealTypes = (['Breakfast', 'Lunch', 'Dinner'] as const).map(toDbMealType);
 
     for (let i = 0; i < days.length; i++) {
       const date = days[i];

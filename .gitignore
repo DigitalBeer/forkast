@@ -26,14 +26,6 @@
 claude.md
 .vibeyardignore
 .mcp.json
-1
-
-# Project documentation (not needed at runtime)
-QA_GUIDELINES.md
-DOCKER_DEPLOY.md
-EDGE_FUNCTION_DEPLOY.md
-README.md
-tmp-extract.mjs
 
 # debug
 npm-debug.log*
@@ -41,8 +33,12 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files — templates are tracked so a fresh clone has setup guidance;
+# anything containing real values stays ignored.
 .env*
+!.env.example
+!.env.docker.example
+!.env.docker.local.example
 
 # vercel
 .vercel
@@ -88,7 +84,6 @@ node_modules/
 temp/
 .bmad-coverage/
 .windsurf/
-docs/
 web-bundles/
 .agent/
 .agents/
@@ -104,7 +99,6 @@ test-results/
 .swc/
 coverage/
 playwright-report/
-scripts/
 
 # Generated reports
 eslint-report.*

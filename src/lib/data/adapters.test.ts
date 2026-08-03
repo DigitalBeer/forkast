@@ -7,6 +7,7 @@ import {
   SupabaseAdapter,
 } from './adapters';
 import { createClient } from '@/lib/supabase/client';
+import type { MealFormInputs } from '@/components/meals/MealForm';
 
 vi.mock('@/lib/supabase/client', () => ({
   createClient: vi.fn(),
@@ -34,17 +35,26 @@ Object.defineProperty(window, 'localStorage', {
 });
 
 describe('Storage Adapters', () => {
+  // LocalStorageAdapter actually round-trips `ingredients` as a
+  // comma-separated string (see parseIngredients in adapters.ts) even
+  // though MealFormInputs types it as a structured array -- a real,
+  // pre-existing inconsistency between the form schema and the
+  // localStorage schema (see REMEDIATION-PLAN.md P10). Cast rather than
+  // change the fixture's runtime shape, which the tests below depend on.
   const testMeal = {
     name: 'Test Meal',
     description: 'A delicious test meal',
     ingredients: '1 pcs Test Ingredient',
     instructions: 'Test instructions',
     tags: ['test'],
-  };
+  } as unknown as MealFormInputs;
 
   let mockQueryBuilder: Record<string, unknown>;
-  let mockFrom: ReturnType<typeof vi.fn>;
-  let mockStorageFrom: ReturnType<typeof vi.fn>;
+  let mockFrom: (...args: unknown[]) => unknown;
+  let mockStorageFrom: (...args: unknown[]) => {
+    upload: ReturnType<typeof vi.fn>;
+    getPublicUrl: ReturnType<typeof vi.fn>;
+  };
 
   beforeEach(() => {
     localStorage.clear();
@@ -73,7 +83,7 @@ describe('Storage Adapters', () => {
     vi.mocked(createClient).mockReturnValue({
       from: mockFrom,
       storage: { from: mockStorageFrom },
-    } as ReturnType<typeof createClient>);
+    } as unknown as ReturnType<typeof createClient>);
   });
 
   describe('LocalStorageAdapter', () => {

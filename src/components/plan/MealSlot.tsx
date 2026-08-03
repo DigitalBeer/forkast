@@ -3,7 +3,7 @@
 import { useDrop } from 'react-dnd';
 import { useRef } from 'react';
 import type { Meal, MealType } from '@/types/meal';
-import { MealCard } from './MealCard';
+import { PlannerMealCard } from './PlannerMealCard';
 import { MealTypeIcon } from '@/components/ui/MealTypeIcon';
 
 interface MealSlotProps {
@@ -118,7 +118,7 @@ export function MealSlot({
               <span>⇄</span> Swap available
             </div>
           )}
-          <MealCard
+          <PlannerMealCard
             meal={meal}
             onRemove={() => onRemove(date, mealType)}
             onDuplicate={

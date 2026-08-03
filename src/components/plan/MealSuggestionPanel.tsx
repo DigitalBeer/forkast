@@ -1,6 +1,6 @@
 'use client';
 
-import { MealCard } from './MealCard';
+import { PlannerMealCard } from './PlannerMealCard';
 import type { Meal } from '@/types/meal';
 import type { MealSuggestion } from '@/lib/services/suggestionService';
 
@@ -27,7 +27,7 @@ export function MealSuggestionPanel({ suggestions }: MealSuggestionPanelProps) {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {uniqueSuggestions.map(meal => (
-              <MealCard key={meal.id} meal={meal as Meal} />
+              <PlannerMealCard key={meal.id} meal={meal as Meal} />
             ))}
           </div>
         )}

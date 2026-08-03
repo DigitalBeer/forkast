@@ -34,10 +34,7 @@ vi.stubEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', 'test-key');
 
 import { POST, DELETE } from '../route';
 
-function createFormDataRequest(
-  file: File,
-  method = 'POST',
-): import('next/server').NextRequest {
+function createFormDataRequest(file: File): import('next/server').NextRequest {
   const formData = new FormData();
   formData.append('file', file);
   // We need to mock a NextRequest-like object
@@ -49,7 +46,6 @@ function createFormDataRequest(
 
 function createJsonRequest(
   body: Record<string, unknown>,
-  method = 'DELETE',
 ): import('next/server').NextRequest {
   return {
     formData: () => Promise.reject(new Error('not form data')),
@@ -62,7 +58,7 @@ function createMockFile(type: string, size: number, name = 'test.jpg'): File {
   const blob = new Blob([content], { type });
   const file = new File([blob], name, { type });
   // Ensure arrayBuffer is available (jsdom may not polyfill it on File/Blob)
-  if (!(file as Record<string, unknown>).arrayBuffer) {
+  if (!(file as unknown as Record<string, unknown>).arrayBuffer) {
     const buffer = new TextEncoder().encode(content).buffer;
     Object.defineProperty(file, 'arrayBuffer', {
       value: () => Promise.resolve(buffer),

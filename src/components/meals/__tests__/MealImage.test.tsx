@@ -24,6 +24,7 @@ vi.mock('next/image', () => ({
           justifyContent: 'center',
         }}
       >
+        {/* eslint-disable-next-line @next/next/no-img-element -- mocking next/image itself */}
         <img
           src={src}
           alt={alt}

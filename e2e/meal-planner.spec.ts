@@ -1,8 +1,9 @@
 import { test, expect } from '@playwright/test';
+import { waitForPageLoad } from './helpers/test-utils';
 
 /**
  * Meal Planner E2E Tests
- * 
+ *
  * Tests the weekly meal planning functionality including:
  * - Creating new meal plans
  * - Adding meals to plan slots
@@ -10,14 +11,6 @@ import { test, expect } from '@playwright/test';
  * - Saving and updating plans
  * - Shopping list generation
  */
-
-// Helper function to wait for page load
-const waitForPageLoad = async (page) => {
-  await Promise.all([
-    page.waitForLoadState('networkidle'),
-    page.waitForLoadState('domcontentloaded'),
-  ]);
-};
 
 test.describe('Meal Planner', () => {
   test.beforeEach(async ({ page }) => {
